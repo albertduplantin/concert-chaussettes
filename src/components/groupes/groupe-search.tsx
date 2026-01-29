@@ -23,6 +23,8 @@ interface GroupeResult {
   ville: string | null;
   departement: string | null;
   region: string | null;
+  photos: string[];
+  thumbnailUrl: string | null;
   youtubeVideos: string[];
   contactEmail: string | null;
   contactTel: string | null;

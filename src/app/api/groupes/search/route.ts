@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
       ville: g.ville,
       departement: g.departement,
       region: g.region,
+      photos: g.photos ?? [],
+      thumbnailUrl: g.thumbnailUrl,
       youtubeVideos: g.youtubeVideos ?? [],
       contactEmail: g.contactEmail,
       contactTel: g.contactTel,
