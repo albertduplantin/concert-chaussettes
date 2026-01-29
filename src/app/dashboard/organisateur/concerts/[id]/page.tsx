@@ -26,6 +26,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
+import { MessageGenerator } from "@/components/messages/message-generator";
 
 interface ConcertDetailPageProps {
   params: Promise<{ id: string }>;
@@ -224,6 +225,23 @@ export default async function ConcertDetailPage({
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {/* Générateur de messages */}
+      {concert.status === "PUBLIE" && (
+        <MessageGenerator
+          concert={{
+            id: concert.id,
+            titre: concert.titre,
+            description: concert.description,
+            date: concert.date.toISOString(),
+            adresseComplete: concert.adresseComplete,
+            adressePublique: concert.adressePublique,
+            ville: concert.ville,
+            slug: concert.slug,
+          }}
+          organisateurNom={organisateur.nom}
+        />
       )}
     </div>
   );
