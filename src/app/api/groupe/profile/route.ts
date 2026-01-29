@@ -3,36 +3,30 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { groupes, groupeGenres } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { z } from "zod/v4";
-
-const profileSchema = z.object({
-  nom: z.string().min(1),
-  bio: z.string().optional(),
-  ville: z.string().optional(),
-  codePostal: z.string().optional(),
-  departement: z.string().optional(),
-  region: z.string().optional(),
-  contactEmail: z.string().optional(),
-  contactTel: z.string().optional(),
-  contactSite: z.string().optional(),
-  genres: z.array(z.string()),
-  youtubeVideos: z.array(z.string()),
-});
+import { groupeProfileSchema } from "@/lib/validation";
+import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
+import { sanitizeText, sanitizeEmail, sanitizePhone, sanitizeUrl } from "@/lib/sanitize";
 
 export async function PUT(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== "GROUPE") {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    if (!session) {
+      return apiErrorResponse(ApiError.unauthorized());
+    }
+
+    if (session.user.role !== "GROUPE") {
+      return apiErrorResponse(
+        ApiError.forbidden("Seuls les groupes peuvent modifier leur profil")
+      );
     }
 
     const body = await request.json();
-    const result = profileSchema.safeParse(body);
 
+    // Validation avec schéma renforcé
+    const result = groupeProfileSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Données invalides" },
-        { status: 400 }
+      return apiErrorResponse(
+        ApiError.validation(result.error.issues[0]?.message || "Données invalides")
       );
     }
 
@@ -44,23 +38,25 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!groupe) {
-      return NextResponse.json({ error: "Groupe non trouvé" }, { status: 404 });
+      return apiErrorResponse(ApiError.notFound("Groupe non trouvé"));
     }
 
-    // Mettre à jour le groupe
+    // Mettre à jour le groupe avec données sanitizées
     await db
       .update(groupes)
       .set({
-        nom: data.nom,
-        bio: data.bio || null,
-        ville: data.ville || null,
+        nom: sanitizeText(data.nom),
+        bio: data.bio ? sanitizeText(data.bio) : null,
+        ville: data.ville ? sanitizeText(data.ville) : null,
         codePostal: data.codePostal || null,
-        departement: data.departement || null,
-        region: data.region || null,
-        contactEmail: data.contactEmail || null,
-        contactTel: data.contactTel || null,
-        contactSite: data.contactSite || null,
-        youtubeVideos: data.youtubeVideos,
+        departement: data.departement ? sanitizeText(data.departement) : null,
+        region: data.region ? sanitizeText(data.region) : null,
+        contactEmail: data.contactEmail ? sanitizeEmail(data.contactEmail) : null,
+        contactTel: data.contactTel ? sanitizePhone(data.contactTel) : null,
+        contactSite: data.contactSite ? sanitizeUrl(data.contactSite) : null,
+        photos: data.photos || [], // URLs déjà validées par le schéma
+        thumbnailUrl: data.thumbnailUrl || null, // URL de miniature validée
+        youtubeVideos: data.youtubeVideos.filter(Boolean), // Déjà sanitizées par le schéma
         updatedAt: new Date(),
       })
       .where(eq(groupes.id, groupe.id));
@@ -78,11 +74,7 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json({ message: "Profil mis à jour" });
-  } catch {
-    console.error("Erreur mise à jour profil groupe");
-    return NextResponse.json(
-      { error: "Erreur interne du serveur" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, "mise à jour profil groupe");
   }
 }

@@ -9,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ImageUploader } from "@/components/ui/image-uploader";
 import { toast } from "sonner";
-import { X, Plus, Youtube, Save } from "lucide-react";
+import { X, Plus, Youtube, Save, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface GroupeProfileFormProps {
@@ -19,6 +20,7 @@ interface GroupeProfileFormProps {
     nom: string;
     bio: string | null;
     photos: string[];
+    thumbnailUrl: string | null;
     youtubeVideos: string[];
     ville: string | null;
     codePostal: string | null;
@@ -52,6 +54,10 @@ export function GroupeProfileForm({
   const [contactSite, setContactSite] = useState(groupe.contactSite || "");
   const [selectedGenres, setSelectedGenres] = useState<string[]>(
     groupe.genres
+  );
+  const [photos, setPhotos] = useState<string[]>(groupe.photos || []);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(
+    groupe.thumbnailUrl
   );
   const [youtubeVideos, setYoutubeVideos] = useState<string[]>(
     groupe.youtubeVideos
@@ -127,6 +133,8 @@ export function GroupeProfileForm({
           contactTel,
           contactSite,
           genres: selectedGenres,
+          photos,
+          thumbnailUrl,
           youtubeVideos,
         }),
       });
@@ -203,6 +211,34 @@ export function GroupeProfileForm({
           {allGenres.length === 0 && (
             <p className="text-sm text-muted-foreground">
               Aucun genre disponible pour le moment.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Photos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Photos
+            <span className="text-sm font-normal text-muted-foreground">
+              ({photos.length}/{maxPhotos})
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ImageUploader
+            images={photos}
+            onImagesChange={setPhotos}
+            maxImages={maxPhotos}
+            thumbnailUrl={thumbnailUrl}
+            onThumbnailChange={setThumbnailUrl}
+            disabled={isLoading}
+          />
+          {!isPremium && photos.length >= maxPhotos && (
+            <p className="text-sm text-muted-foreground mt-4">
+              Passez en Premium pour ajouter jusqu&apos;&agrave; 10 photos.
             </p>
           )}
         </CardContent>

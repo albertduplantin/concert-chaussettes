@@ -8,6 +8,7 @@ import {
   useCallback,
 } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 interface SessionUser {
   id: string;
@@ -74,9 +75,11 @@ function SessionProvider({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
-      {children}
-      <Toaster />
-    </SessionProvider>
+    <ErrorBoundary>
+      <SessionProvider>
+        {children}
+        <Toaster />
+      </SessionProvider>
+    </ErrorBoundary>
   );
 }

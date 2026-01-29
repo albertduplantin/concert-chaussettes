@@ -51,6 +51,7 @@ export default async function GroupeDashboard() {
           nom: groupe.nom,
           bio: groupe.bio,
           photos: groupe.photos ?? [],
+          thumbnailUrl: groupe.thumbnailUrl ?? null,
           youtubeVideos: groupe.youtubeVideos ?? [],
           ville: groupe.ville,
           codePostal: groupe.codePostal,

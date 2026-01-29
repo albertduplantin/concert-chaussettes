@@ -3,20 +3,23 @@ import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { messageTemplates, organisateurs, subscriptions } from "@/lib/db/schema";
 import { eq, or } from "drizzle-orm";
-import { z } from "zod/v4";
+import { messageTemplateSchema } from "@/lib/validation";
+import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
+import { sanitizeText } from "@/lib/sanitize";
 
-const templateSchema = z.object({
-  nom: z.string().min(1, "Le nom est requis"),
-  sujet: z.string().nullable().optional(),
-  contenu: z.string().min(1, "Le contenu est requis"),
-  type: z.enum(["EMAIL", "SMS", "WHATSAPP"]),
-});
+const FREE_TEMPLATES_LIMIT = 2;
 
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== "ORGANISATEUR") {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    if (!session) {
+      return apiErrorResponse(ApiError.unauthorized());
+    }
+
+    if (session.user.role !== "ORGANISATEUR") {
+      return apiErrorResponse(
+        ApiError.forbidden("Seuls les organisateurs peuvent accéder aux templates")
+      );
     }
 
     const organisateur = await db.query.organisateurs.findFirst({
@@ -24,7 +27,7 @@ export async function GET() {
     });
 
     if (!organisateur) {
-      return NextResponse.json({ error: "Profil non trouvé" }, { status: 404 });
+      return apiErrorResponse(ApiError.notFound("Profil organisateur non trouvé"));
     }
 
     // Récupérer les templates personnels + les templates par défaut
@@ -37,20 +40,22 @@ export async function GET() {
     });
 
     return NextResponse.json({ templates: allTemplates });
-  } catch {
-    console.error("Erreur récupération templates");
-    return NextResponse.json(
-      { error: "Erreur interne du serveur" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, "récupération templates");
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== "ORGANISATEUR") {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    if (!session) {
+      return apiErrorResponse(ApiError.unauthorized());
+    }
+
+    if (session.user.role !== "ORGANISATEUR") {
+      return apiErrorResponse(
+        ApiError.forbidden("Seuls les organisateurs peuvent créer des templates")
+      );
     }
 
     const organisateur = await db.query.organisateurs.findFirst({
@@ -58,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!organisateur) {
-      return NextResponse.json({ error: "Profil non trouvé" }, { status: 404 });
+      return apiErrorResponse(ApiError.notFound("Profil organisateur non trouvé"));
     }
 
     // Vérifier la limite freemium
@@ -71,44 +76,43 @@ export async function POST(request: NextRequest) {
       const existingTemplates = await db.query.messageTemplates.findMany({
         where: eq(messageTemplates.organisateurId, organisateur.id),
       });
-      if (existingTemplates.length >= 2) {
-        return NextResponse.json(
-          { error: "Limite de 2 templates atteinte. Passez en Premium." },
-          { status: 403 }
+
+      if (existingTemplates.length >= FREE_TEMPLATES_LIMIT) {
+        return apiErrorResponse(
+          ApiError.forbidden(
+            `Limite de ${FREE_TEMPLATES_LIMIT} templates atteinte. Passez en Premium pour en créer plus.`
+          )
         );
       }
     }
 
     const body = await request.json();
-    const result = templateSchema.safeParse(body);
 
+    // Validation avec schéma renforcé
+    const result = messageTemplateSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.issues[0].message },
-        { status: 400 }
+      return apiErrorResponse(
+        ApiError.validation(result.error.issues[0]?.message || "Données invalides")
       );
     }
 
     const data = result.data;
 
+    // Sanitization et création du template
     const [template] = await db
       .insert(messageTemplates)
       .values({
         organisateurId: organisateur.id,
-        nom: data.nom,
-        sujet: data.sujet ?? null,
-        contenu: data.contenu,
+        nom: sanitizeText(data.nom),
+        sujet: data.sujet ? sanitizeText(data.sujet) : null,
+        contenu: sanitizeText(data.contenu),
         type: data.type,
         isDefault: false,
       })
       .returning();
 
     return NextResponse.json({ template }, { status: 201 });
-  } catch {
-    console.error("Erreur création template");
-    return NextResponse.json(
-      { error: "Erreur interne du serveur" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, "création template");
   }
 }

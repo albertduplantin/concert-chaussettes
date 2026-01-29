@@ -109,6 +109,7 @@ export const groupes = pgTable("groupes", {
   nom: varchar("nom", { length: 255 }).notNull(),
   bio: text("bio"),
   photos: jsonb("photos").$type<string[]>().default([]),
+  thumbnailUrl: varchar("thumbnail_url", { length: 500 }), // Photo de profil/miniature
   youtubeVideos: jsonb("youtube_videos").$type<string[]>().default([]),
   // Localisation
   ville: varchar("ville", { length: 255 }),

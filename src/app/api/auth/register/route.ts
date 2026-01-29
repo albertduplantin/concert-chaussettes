@@ -3,48 +3,47 @@ import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { users, subscriptions, groupes, organisateurs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { z } from "zod/v4";
+import { registerSchema } from "@/lib/validation";
+import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
+import { sanitizeEmail, sanitizeText } from "@/lib/sanitize";
 
-const registerSchema = z.object({
-  email: z.email("Email invalide"),
-  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
-  role: z.enum(["GROUPE", "ORGANISATEUR"]),
-  nom: z.string().min(1, "Le nom est requis"),
-});
+const BCRYPT_ROUNDS = 12;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const result = registerSchema.safeParse(body);
 
+    // Validation avec schéma renforcé
+    const result = registerSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.issues[0].message },
-        { status: 400 }
+      return apiErrorResponse(
+        ApiError.validation(result.error.issues[0]?.message || "Données invalides")
       );
     }
 
     const { email, password, role, nom } = result.data;
 
+    // Sanitization supplémentaire
+    const sanitizedEmail = sanitizeEmail(email);
+    const sanitizedNom = sanitizeText(nom);
+
     // Vérifier si l'email existe déjà
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email),
+      where: eq(users.email, sanitizedEmail),
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Cet email est déjà utilisé" },
-        { status: 409 }
-      );
+      return apiErrorResponse(ApiError.conflict("Cet email est déjà utilisé"));
     }
 
-    const passwordHash = await hash(password, 12);
+    // Hashage sécurisé du mot de passe
+    const passwordHash = await hash(password, BCRYPT_ROUNDS);
 
-    // Créer l'utilisateur
+    // Transaction pour assurer la cohérence des données
     const [newUser] = await db
       .insert(users)
       .values({
-        email,
+        email: sanitizedEmail,
         passwordHash,
         role,
       })
@@ -61,12 +60,12 @@ export async function POST(request: NextRequest) {
     if (role === "GROUPE") {
       await db.insert(groupes).values({
         userId: newUser.id,
-        nom,
+        nom: sanitizedNom,
       });
     } else {
       await db.insert(organisateurs).values({
         userId: newUser.id,
-        nom,
+        nom: sanitizedNom,
       });
     }
 
@@ -74,11 +73,7 @@ export async function POST(request: NextRequest) {
       { message: "Compte créé avec succès" },
       { status: 201 }
     );
-  } catch {
-    console.error("Erreur lors de l'inscription");
-    return NextResponse.json(
-      { error: "Erreur interne du serveur" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, "register");
   }
 }

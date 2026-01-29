@@ -6,29 +6,41 @@ import {
   organisateurs,
   subscriptions,
 } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { z } from "zod/v4";
+import { eq } from "drizzle-orm";
 import slugify from "slugify";
 import { randomBytes } from "crypto";
+import { concertSchema } from "@/lib/validation";
+import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
+import { sanitizeText } from "@/lib/sanitize";
 
-const concertSchema = z.object({
-  titre: z.string().min(1, "Le titre est requis"),
-  description: z.string().optional(),
-  date: z.string().min(1, "La date est requise"),
-  adresseComplete: z.string().optional(),
-  adressePublique: z.string().optional(),
-  ville: z.string().optional(),
-  groupeId: z.string().optional(),
-  showGroupe: z.boolean().default(true),
-  maxInvites: z.number().nullable().optional(),
-  status: z.enum(["BROUILLON", "PUBLIE"]).default("BROUILLON"),
-});
+const FREE_CONCERTS_LIMIT_PER_YEAR = 3;
+const SLUG_SUFFIX_LENGTH = 4;
+
+/**
+ * Génère un slug unique pour un concert
+ */
+function generateUniqueSlug(titre: string): string {
+  const sanitizedTitle = sanitizeText(titre);
+  const baseSlug = slugify(sanitizedTitle, {
+    lower: true,
+    strict: true,
+    locale: "fr",
+  });
+  const uniqueSuffix = randomBytes(SLUG_SUFFIX_LENGTH).toString("hex");
+  return `${baseSlug}-${uniqueSuffix}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session || session.user.role !== "ORGANISATEUR") {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    if (!session) {
+      return apiErrorResponse(ApiError.unauthorized());
+    }
+
+    if (session.user.role !== "ORGANISATEUR") {
+      return apiErrorResponse(
+        ApiError.forbidden("Seuls les organisateurs peuvent créer des concerts")
+      );
     }
 
     const organisateur = await db.query.organisateurs.findFirst({
@@ -36,10 +48,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!organisateur) {
-      return NextResponse.json(
-        { error: "Profil organisateur non trouvé" },
-        { status: 404 }
-      );
+      return apiErrorResponse(ApiError.notFound("Profil organisateur non trouvé"));
     }
 
     // Vérifier la limite freemium
@@ -56,44 +65,42 @@ export async function POST(request: NextRequest) {
       const concertsThisYear = existingConcerts.filter(
         (c) => new Date(c.date).getFullYear() === currentYear
       );
-      if (concertsThisYear.length >= 3) {
-        return NextResponse.json(
-          {
-            error:
-              "Limite de 3 concerts/an atteinte. Passez en Premium pour créer plus de concerts.",
-          },
-          { status: 403 }
+
+      if (concertsThisYear.length >= FREE_CONCERTS_LIMIT_PER_YEAR) {
+        return apiErrorResponse(
+          ApiError.forbidden(
+            `Limite de ${FREE_CONCERTS_LIMIT_PER_YEAR} concerts/an atteinte. Passez en Premium pour créer plus de concerts.`
+          )
         );
       }
     }
 
     const body = await request.json();
-    const result = concertSchema.safeParse(body);
 
+    // Validation avec schéma renforcé
+    const result = concertSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.issues[0].message },
-        { status: 400 }
+      return apiErrorResponse(
+        ApiError.validation(result.error.issues[0]?.message || "Données invalides")
       );
     }
 
     const data = result.data;
 
     // Générer un slug unique
-    const baseSlug = slugify(data.titre, { lower: true, strict: true });
-    const uniqueSuffix = randomBytes(4).toString("hex");
-    const slug = `${baseSlug}-${uniqueSuffix}`;
+    const slug = generateUniqueSlug(data.titre);
 
+    // Sanitization des champs texte
     const [concert] = await db
       .insert(concerts)
       .values({
         organisateurId: organisateur.id,
-        titre: data.titre,
-        description: data.description || null,
+        titre: sanitizeText(data.titre),
+        description: data.description ? sanitizeText(data.description) : null,
         date: new Date(data.date),
-        adresseComplete: data.adresseComplete || null,
-        adressePublique: data.adressePublique || null,
-        ville: data.ville || null,
+        adresseComplete: data.adresseComplete ? sanitizeText(data.adresseComplete) : null,
+        adressePublique: data.adressePublique ? sanitizeText(data.adressePublique) : null,
+        ville: data.ville ? sanitizeText(data.ville) : null,
         groupeId: data.groupeId || null,
         showGroupe: data.showGroupe,
         maxInvites: data.maxInvites ?? null,
@@ -103,11 +110,7 @@ export async function POST(request: NextRequest) {
       .returning();
 
     return NextResponse.json({ concert }, { status: 201 });
-  } catch {
-    console.error("Erreur création concert");
-    return NextResponse.json(
-      { error: "Erreur interne du serveur" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, "création concert");
   }
 }

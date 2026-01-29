@@ -1,30 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { concerts, inscriptions, contacts, organisateurs } from "@/lib/db/schema";
+import { concerts, inscriptions, contacts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { z } from "zod/v4";
-
-const inscriptionSchema = z.object({
-  concertId: z.string().uuid(),
-  nom: z.string().min(1, "Le nom est requis"),
-  email: z.email("Email invalide"),
-  telephone: z.string().optional(),
-  nombrePersonnes: z.number().min(1).max(10).default(1),
-});
+import { inscriptionSchema } from "@/lib/validation";
+import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
+import { sanitizeText, sanitizeEmail, sanitizePhone } from "@/lib/sanitize";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const result = inscriptionSchema.safeParse(body);
 
+    // Validation avec schéma renforcé
+    const result = inscriptionSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error.issues[0].message },
-        { status: 400 }
+      return apiErrorResponse(
+        ApiError.validation(result.error.issues[0]?.message || "Données invalides")
       );
     }
 
     const data = result.data;
+
+    // Sanitization des données
+    const sanitizedEmail = sanitizeEmail(data.email);
+    const sanitizedNom = sanitizeText(data.nom);
+    const sanitizedPhone = data.telephone ? sanitizePhone(data.telephone) : null;
 
     // Vérifier que le concert existe et est publié
     const concert = await db.query.concerts.findFirst({
@@ -39,22 +38,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (!concert) {
-      return NextResponse.json(
-        { error: "Concert non trouvé" },
-        { status: 404 }
-      );
+      return apiErrorResponse(ApiError.notFound("Concert non trouvé ou non publié"));
     }
 
     // Vérifier si l'email est déjà inscrit
     const existingInscription = concert.inscriptions.find(
-      (i) => i.email === data.email && i.status !== "ANNULE"
+      (i) => i.email.toLowerCase() === sanitizedEmail && i.status !== "ANNULE"
     );
 
     if (existingInscription) {
-      return NextResponse.json(
-        { error: "Vous êtes déjà inscrit à ce concert" },
-        { status: 409 }
-      );
+      return apiErrorResponse(ApiError.conflict("Vous êtes déjà inscrit à ce concert"));
     }
 
     // Calculer les places confirmées
@@ -66,14 +59,14 @@ export async function POST(request: NextRequest) {
       ? confirmedCount + data.nombrePersonnes > concert.maxInvites
       : false;
 
-    // Créer l'inscription
+    // Créer l'inscription avec données sanitizées
     const [inscription] = await db
       .insert(inscriptions)
       .values({
         concertId: data.concertId,
-        nom: data.nom,
-        email: data.email,
-        telephone: data.telephone || null,
+        nom: sanitizedNom,
+        email: sanitizedEmail,
+        telephone: sanitizedPhone,
         nombrePersonnes: data.nombrePersonnes,
         status: isFull ? "LISTE_ATTENTE" : "CONFIRME",
       })
@@ -83,7 +76,7 @@ export async function POST(request: NextRequest) {
     const existingContact = await db.query.contacts.findFirst({
       where: and(
         eq(contacts.organisateurId, concert.organisateurId),
-        eq(contacts.email, data.email)
+        eq(contacts.email, sanitizedEmail)
       ),
     });
 
@@ -91,8 +84,8 @@ export async function POST(request: NextRequest) {
       await db
         .update(contacts)
         .set({
-          nom: data.nom,
-          telephone: data.telephone || existingContact.telephone,
+          nom: sanitizedNom,
+          telephone: sanitizedPhone || existingContact.telephone,
           nombreParticipations: existingContact.nombreParticipations + 1,
           dernierConcertId: concert.id,
           updatedAt: new Date(),
@@ -101,25 +94,21 @@ export async function POST(request: NextRequest) {
     } else {
       await db.insert(contacts).values({
         organisateurId: concert.organisateurId,
-        email: data.email,
-        nom: data.nom,
-        telephone: data.telephone || null,
+        email: sanitizedEmail,
+        nom: sanitizedNom,
+        telephone: sanitizedPhone,
         nombreParticipations: 1,
         dernierConcertId: concert.id,
       });
     }
 
-    // Log simulé pour notification
+    // Log pour notification (en prod, envoyer un vrai email)
     console.log(
-      `[NOTIFICATION] Nouvelle inscription: ${data.nom} (${data.email}) pour "${concert.titre}" - Status: ${inscription.status}`
+      `[NOTIFICATION] Nouvelle inscription: ${sanitizedNom} (${sanitizedEmail}) pour "${concert.titre}" - Status: ${inscription.status}`
     );
 
     return NextResponse.json({ inscription }, { status: 201 });
-  } catch {
-    console.error("Erreur inscription");
-    return NextResponse.json(
-      { error: "Erreur interne du serveur" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, "inscription");
   }
 }

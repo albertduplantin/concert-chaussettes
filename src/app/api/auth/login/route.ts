@@ -5,72 +5,77 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { SignJWT } from "jose";
 import { cookies } from "next/headers";
+import { loginSchema } from "@/lib/validation";
+import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
+import { sanitizeEmail } from "@/lib/sanitize";
 
 const secret = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret"
 );
 
+const isProduction = process.env.NODE_ENV === "production";
+const COOKIE_NAME = "authjs.session-token";
+const SESSION_DURATION_DAYS = 30;
+
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email et mot de passe requis" },
-        { status: 400 }
+    // Validation avec Zod
+    const result = loginSchema.safeParse(body);
+    if (!result.success) {
+      return apiErrorResponse(
+        ApiError.validation(result.error.issues[0]?.message || "Données invalides")
       );
     }
 
+    const { email, password } = result.data;
+    const sanitizedEmail = sanitizeEmail(email);
+
     const user = await db.query.users.findFirst({
-      where: eq(users.email, email),
+      where: eq(users.email, sanitizedEmail),
     });
 
+    // Message générique pour éviter l'énumération des utilisateurs
     if (!user) {
-      return NextResponse.json(
-        { error: "Email ou mot de passe incorrect" },
-        { status: 401 }
-      );
+      return apiErrorResponse(ApiError.unauthorized("Email ou mot de passe incorrect"));
     }
 
     const isValid = await compare(password, user.passwordHash);
 
     if (!isValid) {
-      return NextResponse.json(
-        { error: "Email ou mot de passe incorrect" },
-        { status: 401 }
-      );
+      return apiErrorResponse(ApiError.unauthorized("Email ou mot de passe incorrect"));
     }
 
-    // Créer un JWT session token
+    // Créer un JWT session token avec claims standardisés
+    const now = Math.floor(Date.now() / 1000);
     const token = await new SignJWT({
+      sub: user.id,
       id: user.id,
       email: user.email,
       role: user.role,
-      sub: user.id,
-      iat: Math.floor(Date.now() / 1000),
+      iat: now,
+      nbf: now, // Not Before - token valide immédiatement
     })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("30d")
+      .setExpirationTime(`${SESSION_DURATION_DAYS}d`)
+      .setIssuedAt(now)
       .sign(secret);
 
-    // Définir le cookie de session
+    // Définir le cookie de session avec options sécurisées
     const cookieStore = await cookies();
-    cookieStore.set("authjs.session-token", token, {
+    cookieStore.set(COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "strict" : "lax",
       path: "/",
-      maxAge: 30 * 24 * 60 * 60, // 30 jours
+      maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60,
     });
 
     return NextResponse.json({
       user: { id: user.id, email: user.email, role: user.role },
     });
-  } catch {
-    console.error("Erreur login");
-    return NextResponse.json(
-      { error: "Erreur interne du serveur" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, "login");
   }
 }
