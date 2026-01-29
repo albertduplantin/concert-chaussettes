@@ -23,7 +23,7 @@ import {
   Users,
   CalendarDays,
   MapPin,
-  Copy,
+  Pencil,
 } from "lucide-react";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 
@@ -121,17 +121,25 @@ export default async function ConcertDetailPage({
             </span>
           </div>
         </div>
-        {concert.status === "PUBLIE" && (
-          <div className="flex gap-2">
-            <CopyLinkButton url={concertUrl} />
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/concert/${concert.slug}`} target="_blank">
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Voir la page
-              </Link>
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/organisateur/concerts/${concert.id}/edit`}>
+              <Pencil className="h-3 w-3 mr-1" />
+              Modifier
+            </Link>
+          </Button>
+          {concert.status === "PUBLIE" && (
+            <>
+              <CopyLinkButton url={concertUrl} />
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/concert/${concert.slug}`} target="_blank">
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Voir la page
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Inscrits confirmés */}

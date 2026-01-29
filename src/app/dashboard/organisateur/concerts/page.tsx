@@ -7,7 +7,7 @@ import { eq, desc } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CalendarDays, Users, ExternalLink } from "lucide-react";
+import { Plus, CalendarDays, Users, ExternalLink, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -148,6 +148,14 @@ export default async function ConcertsPage() {
                         </Link>
                       </Button>
                     )}
+                    <Button variant="outline" size="sm" asChild>
+                      <Link
+                        href={`/dashboard/organisateur/concerts/${concert.id}/edit`}
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Modifier
+                      </Link>
+                    </Button>
                     <Button variant="outline" size="sm" asChild>
                       <Link
                         href={`/dashboard/organisateur/concerts/${concert.id}`}
