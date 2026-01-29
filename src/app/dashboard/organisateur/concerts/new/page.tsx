@@ -17,7 +17,7 @@ export default function NewConcertPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showGroupe, setShowGroupe] = useState(true);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>, status: "BROUILLON" | "PUBLIE") {
     e.preventDefault();
     setIsLoading(true);
 
@@ -34,7 +34,7 @@ export default function NewConcertPage() {
         ? Number(formData.get("maxInvites"))
         : null,
       showGroupe,
-      status: formData.get("status") as "BROUILLON" | "PUBLIE",
+      status,
     };
 
     try {
@@ -73,7 +73,7 @@ export default function NewConcertPage() {
         <h1 className="text-3xl font-bold">Nouveau concert</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Informations du concert</CardTitle>
@@ -177,22 +177,26 @@ export default function NewConcertPage() {
 
         <div className="flex gap-4">
           <Button
-            type="submit"
-            name="status"
-            value="BROUILLON"
+            type="button"
             variant="outline"
             disabled={isLoading}
             className="gap-2"
+            onClick={(e) => {
+              const form = e.currentTarget.closest("form");
+              if (form) handleSubmit({ preventDefault: () => {}, currentTarget: form } as React.FormEvent<HTMLFormElement>, "BROUILLON");
+            }}
           >
             <Save className="h-4 w-4" />
             Sauvegarder comme brouillon
           </Button>
           <Button
-            type="submit"
-            name="status"
-            value="PUBLIE"
+            type="button"
             disabled={isLoading}
             className="gap-2"
+            onClick={(e) => {
+              const form = e.currentTarget.closest("form");
+              if (form) handleSubmit({ preventDefault: () => {}, currentTarget: form } as React.FormEvent<HTMLFormElement>, "PUBLIE");
+            }}
           >
             Publier le concert
           </Button>
