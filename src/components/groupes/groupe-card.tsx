@@ -10,7 +10,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { MapPin, Mail, Phone, Globe, Youtube, CheckCircle, Zap } from "lucide-react";
+import { MapPin, Mail, Phone, Globe, Youtube, CheckCircle, Zap, CalendarPlus } from "lucide-react";
+import Link from "next/link";
 
 interface GroupeCardProps {
   groupe: {
@@ -184,6 +185,16 @@ export function GroupeCard({ groupe }: GroupeCardProps) {
                 </a>
               )}
             </div>
+          </div>
+
+          {/* Bouton créer concert */}
+          <div className="pt-4 border-t">
+            <Button asChild className="w-full gap-2">
+              <Link href={`/dashboard/organisateur/concerts/new?groupeId=${groupe.id}`}>
+                <CalendarPlus className="h-4 w-4" />
+                Créer un concert avec ce groupe
+              </Link>
+            </Button>
           </div>
         </div>
       </DialogContent>

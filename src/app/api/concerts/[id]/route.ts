@@ -46,6 +46,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         eq(concerts.id, id),
         eq(concerts.organisateurId, organisateur.id)
       ),
+      with: {
+        groupe: {
+          with: {
+            groupeGenres: {
+              with: {
+                genre: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!concert) {
@@ -55,7 +66,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ concert });
+    // Formater le groupe pour le composant GroupeSelect
+    const formattedConcert = {
+      ...concert,
+      groupe: concert.groupe
+        ? {
+            id: concert.groupe.id,
+            nom: concert.groupe.nom,
+            bio: concert.groupe.bio,
+            ville: concert.groupe.ville,
+            region: concert.groupe.region,
+            genres: concert.groupe.groupeGenres.map((gg) => ({
+              id: gg.genre.id,
+              nom: gg.genre.nom,
+            })),
+          }
+        : null,
+    };
+
+    return NextResponse.json({ concert: formattedConcert });
   } catch {
     return NextResponse.json(
       { error: "Erreur interne du serveur" },

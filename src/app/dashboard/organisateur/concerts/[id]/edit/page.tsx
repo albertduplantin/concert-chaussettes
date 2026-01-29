@@ -12,9 +12,19 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Send, Trash2, Loader2 } from "lucide-react";
 import { use } from "react";
+import { GroupeSelect } from "@/components/forms/groupe-select";
 
 interface EditConcertPageProps {
   params: Promise<{ id: string }>;
+}
+
+interface Groupe {
+  id: string;
+  nom: string;
+  bio: string | null;
+  ville: string | null;
+  region: string | null;
+  genres: { id: string; nom: string }[];
 }
 
 interface Concert {
@@ -28,6 +38,8 @@ interface Concert {
   maxInvites: number | null;
   showGroupe: boolean;
   status: "BROUILLON" | "PUBLIE" | "ANNULE";
+  groupeId: string | null;
+  groupe?: Groupe | null;
 }
 
 export default function EditConcertPage({ params }: EditConcertPageProps) {
@@ -37,6 +49,8 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
   const [isFetching, setIsFetching] = useState(true);
   const [showGroupe, setShowGroupe] = useState(true);
   const [concert, setConcert] = useState<Concert | null>(null);
+  const [selectedGroupeId, setSelectedGroupeId] = useState<string | null>(null);
+  const [initialGroupe, setInitialGroupe] = useState<Groupe | null>(null);
 
   useEffect(() => {
     async function fetchConcert() {
@@ -46,6 +60,10 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
           const data = await res.json();
           setConcert(data.concert);
           setShowGroupe(data.concert.showGroupe);
+          setSelectedGroupeId(data.concert.groupeId);
+          if (data.concert.groupe) {
+            setInitialGroupe(data.concert.groupe);
+          }
         } else {
           toast.error("Concert non trouvé");
           router.push("/dashboard/organisateur/concerts");
@@ -77,6 +95,7 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
         ? Number(formData.get("maxInvites"))
         : null,
       showGroupe,
+      groupeId: selectedGroupeId,
       status,
     };
 
@@ -207,12 +226,28 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
 
         <Card>
           <CardHeader>
+            <CardTitle>Groupe</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <GroupeSelect
+              value={selectedGroupeId}
+              onChange={(id) => setSelectedGroupeId(id)}
+              initialGroupe={initialGroupe}
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              Optionnel : associez un groupe à ce concert pour afficher ses informations sur la page publique.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Lieu</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="adresseComplete">
-                Adresse compl&egrave;te (visible uniquement par les inscrits confirm&eacute;s)
+                Adresse complète (visible uniquement par les inscrits confirmés)
               </Label>
               <Input
                 id="adresseComplete"
@@ -260,18 +295,20 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
                 defaultValue={concert.maxInvites || ""}
               />
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Afficher le groupe sur la page publique</Label>
-                <p className="text-sm text-muted-foreground">
-                  Les informations du groupe seront visibles par les invit&eacute;s
-                </p>
+            {selectedGroupeId && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Afficher le groupe sur la page publique</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Les informations du groupe seront visibles par les invités
+                  </p>
+                </div>
+                <Switch
+                  checked={showGroupe}
+                  onCheckedChange={setShowGroupe}
+                />
               </div>
-              <Switch
-                checked={showGroupe}
-                onCheckedChange={setShowGroupe}
-              />
-            </div>
+            )}
           </CardContent>
         </Card>
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,17 +11,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
+import { GroupeSelect } from "@/components/forms/groupe-select";
 
-export default function NewConcertPage() {
+function NewConcertForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialGroupeId = searchParams.get("groupeId");
+
   const [isLoading, setIsLoading] = useState(false);
   const [showGroupe, setShowGroupe] = useState(true);
+  const [selectedGroupeId, setSelectedGroupeId] = useState<string | null>(initialGroupeId);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>, status: "BROUILLON" | "PUBLIE") {
-    e.preventDefault();
+  async function handleSubmit(status: "BROUILLON" | "PUBLIE") {
     setIsLoading(true);
 
-    const formData = new FormData(e.currentTarget);
+    const form = document.getElementById("concert-form") as HTMLFormElement;
+    const formData = new FormData(form);
 
     const body = {
       titre: formData.get("titre") as string,
@@ -34,6 +39,7 @@ export default function NewConcertPage() {
         ? Number(formData.get("maxInvites"))
         : null,
       showGroupe,
+      groupeId: selectedGroupeId,
       status,
     };
 
@@ -73,7 +79,7 @@ export default function NewConcertPage() {
         <h1 className="text-3xl font-bold">Nouveau concert</h1>
       </div>
 
-      <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+      <form id="concert-form" onSubmit={(e) => e.preventDefault()} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Informations du concert</CardTitle>
@@ -84,7 +90,7 @@ export default function NewConcertPage() {
               <Input
                 id="titre"
                 name="titre"
-                placeholder="Ex: Soir&eacute;e jazz dans mon salon"
+                placeholder="Ex: Soirée jazz dans mon salon"
                 required
               />
             </div>
@@ -93,7 +99,7 @@ export default function NewConcertPage() {
               <Textarea
                 id="description"
                 name="description"
-                placeholder="D&eacute;crivez votre concert, l'ambiance, ce que les invit&eacute;s peuvent attendre..."
+                placeholder="Décrivez votre concert, l'ambiance, ce que les invités peuvent attendre..."
                 rows={4}
               />
             </div>
@@ -111,12 +117,27 @@ export default function NewConcertPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Groupe</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <GroupeSelect
+              value={selectedGroupeId}
+              onChange={(id) => setSelectedGroupeId(id)}
+            />
+            <p className="text-sm text-muted-foreground mt-2">
+              Optionnel : associez un groupe à ce concert pour afficher ses informations sur la page publique.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Lieu</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="adresseComplete">
-                Adresse compl&egrave;te (visible uniquement par les inscrits confirm&eacute;s)
+                Adresse complète (visible uniquement par les inscrits confirmés)
               </Label>
               <Input
                 id="adresseComplete"
@@ -127,7 +148,7 @@ export default function NewConcertPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="adressePublique">
-                  Adresse publique (affich&eacute;e sur la page)
+                  Adresse publique (affichée sur la page)
                 </Label>
                 <Input
                   id="adressePublique"
@@ -150,7 +171,7 @@ export default function NewConcertPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="maxInvites">
-                Nombre maximum d&apos;invit&eacute;s (laisser vide si pas de limite)
+                Nombre maximum d&apos;invités (laisser vide si pas de limite)
               </Label>
               <Input
                 id="maxInvites"
@@ -160,18 +181,20 @@ export default function NewConcertPage() {
                 placeholder="20"
               />
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Afficher le groupe sur la page publique</Label>
-                <p className="text-sm text-muted-foreground">
-                  Les informations du groupe seront visibles par les invit&eacute;s
-                </p>
+            {selectedGroupeId && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Afficher le groupe sur la page publique</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Les informations du groupe seront visibles par les invités
+                  </p>
+                </div>
+                <Switch
+                  checked={showGroupe}
+                  onCheckedChange={setShowGroupe}
+                />
               </div>
-              <Switch
-                checked={showGroupe}
-                onCheckedChange={setShowGroupe}
-              />
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -181,10 +204,7 @@ export default function NewConcertPage() {
             variant="outline"
             disabled={isLoading}
             className="gap-2"
-            onClick={(e) => {
-              const form = e.currentTarget.closest("form");
-              if (form) handleSubmit({ preventDefault: () => {}, currentTarget: form } as React.FormEvent<HTMLFormElement>, "BROUILLON");
-            }}
+            onClick={() => handleSubmit("BROUILLON")}
           >
             <Save className="h-4 w-4" />
             Sauvegarder comme brouillon
@@ -193,15 +213,20 @@ export default function NewConcertPage() {
             type="button"
             disabled={isLoading}
             className="gap-2"
-            onClick={(e) => {
-              const form = e.currentTarget.closest("form");
-              if (form) handleSubmit({ preventDefault: () => {}, currentTarget: form } as React.FormEvent<HTMLFormElement>, "PUBLIE");
-            }}
+            onClick={() => handleSubmit("PUBLIE")}
           >
             Publier le concert
           </Button>
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewConcertPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Chargement...</div>}>
+      <NewConcertForm />
+    </Suspense>
   );
 }
