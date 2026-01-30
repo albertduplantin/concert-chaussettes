@@ -74,10 +74,23 @@ export async function middleware(req: NextRequest) {
   const isDashboard = pathname.startsWith("/dashboard");
   const isAdmin = pathname.startsWith("/admin");
   const isApiAuth = pathname.startsWith("/api/auth");
+  const isHomePage = pathname === "/";
+  const isAuthPage = pathname === "/login" || pathname === "/register";
 
   // Ne pas interférer avec les routes d'authentification API
   if (isApiAuth) {
     return NextResponse.next();
+  }
+
+  // Rediriger les utilisateurs connectés depuis la page d'accueil ou les pages auth vers leur dashboard
+  if (isLoggedIn && (isHomePage || isAuthPage)) {
+    const dashboardPath =
+      user?.role === "GROUPE"
+        ? "/dashboard/groupe"
+        : user?.role === "ADMIN"
+          ? "/admin"
+          : "/dashboard/organisateur";
+    return NextResponse.redirect(new URL(dashboardPath, req.url));
   }
 
   // Protéger le dashboard
@@ -110,5 +123,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*"],
+  matcher: ["/", "/login", "/register", "/dashboard/:path*", "/admin/:path*"],
 };
