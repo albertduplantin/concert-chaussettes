@@ -41,6 +41,11 @@ export async function POST(request: NextRequest) {
       return apiErrorResponse(ApiError.unauthorized("Email ou mot de passe incorrect"));
     }
 
+    // Si l'utilisateur n'a pas de mot de passe (compte OAuth), refuser la connexion par mot de passe
+    if (!user.passwordHash) {
+      return apiErrorResponse(ApiError.unauthorized("Utilisez Google pour vous connecter"));
+    }
+
     const isValid = await compare(password, user.passwordHash);
 
     if (!isValid) {
