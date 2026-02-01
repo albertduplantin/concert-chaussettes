@@ -13,6 +13,7 @@ export interface SessionUser {
   role: "GROUPE" | "ORGANISATEUR" | "ADMIN";
   name?: string | null;
   image?: string | null;
+  needsOnboarding?: boolean;
 }
 
 export interface Session {
@@ -223,7 +224,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
+    async signIn({ user, account }) {
+      // Pour les connexions OAuth, vérifier si l'utilisateur a besoin de choisir son rôle
+      if (account?.provider === "google" && user.email) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.email, user.email),
+          with: {
+            groupe: true,
+            organisateur: true,
+          },
+        });
+
+        // Si l'utilisateur existe mais n'a pas encore de profil (groupe ou organisateur)
+        // et qu'il a le rôle par défaut ORGANISATEUR sans mot de passe (OAuth)
+        if (dbUser && !dbUser.passwordHash && !dbUser.groupe && !dbUser.organisateur) {
+          // Marquer qu'il a besoin de l'onboarding
+          // On laisse passer et on redirigera côté client
+          return true;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: string }).role || "ORGANISATEUR";
@@ -231,14 +253,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.image = user.image;
       }
 
-      // Pour OAuth, récupérer le rôle depuis la DB
+      // Pour OAuth, récupérer le rôle depuis la DB et vérifier l'onboarding
       if (account?.provider === "google" && token.email) {
         const dbUser = await db.query.users.findFirst({
           where: eq(users.email, token.email as string),
+          with: {
+            groupe: true,
+            organisateur: true,
+          },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
+          // Marquer si l'utilisateur a besoin de l'onboarding
+          token.needsOnboarding = !dbUser.passwordHash && !dbUser.groupe && !dbUser.organisateur;
+        }
+      }
+
+      // Mettre à jour le token après un update (comme après /api/user/role)
+      if (trigger === "update" && token.email) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.email, token.email as string),
+          with: {
+            groupe: true,
+            organisateur: true,
+          },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.needsOnboarding = !dbUser.passwordHash && !dbUser.groupe && !dbUser.organisateur;
         }
       }
 
@@ -248,6 +291,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         (session.user as { role: string }).role = token.role as string;
+        (session.user as { needsOnboarding?: boolean }).needsOnboarding = token.needsOnboarding as boolean;
       }
       return session;
     },
@@ -277,6 +321,7 @@ export async function getSession(): Promise<Session | null> {
       role: (session.user as { role?: string }).role as "GROUPE" | "ORGANISATEUR" | "ADMIN" || "ORGANISATEUR",
       name: session.user.name,
       image: session.user.image,
+      needsOnboarding: (session.user as { needsOnboarding?: boolean }).needsOnboarding,
     },
   };
 }

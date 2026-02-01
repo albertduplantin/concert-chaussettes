@@ -8,6 +8,11 @@ export default async function DashboardRedirect() {
     redirect("/login");
   }
 
+  // Rediriger les utilisateurs OAuth qui n'ont pas encore choisi leur rôle
+  if (session.user.needsOnboarding) {
+    redirect("/onboarding/role");
+  }
+
   if (session.user.role === "GROUPE") {
     redirect("/dashboard/groupe");
   } else if (session.user.role === "ADMIN") {
