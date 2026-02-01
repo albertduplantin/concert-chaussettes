@@ -83,10 +83,7 @@ export function HeroSearch() {
 
           <Select value={genre} onValueChange={setGenre}>
             <SelectTrigger className="h-12 text-base">
-              <div className="flex items-center gap-2">
-                <Music2 className="h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Genre musical" />
-              </div>
+              <SelectValue placeholder="Genre musical" />
             </SelectTrigger>
             <SelectContent>
               {GENRES.map((g) => (

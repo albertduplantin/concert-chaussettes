@@ -11,9 +11,9 @@ import { MapPin, Star, ArrowRight, Music } from "lucide-react";
 interface FeaturedGroup {
   id: string;
   nom: string;
-  ville: string;
-  departement: string;
-  genres: string[];
+  ville: string | null;
+  departement: string | null;
+  genres: { id: string; nom: string }[];
   thumbnailUrl: string | null;
   bio: string | null;
 }
@@ -106,19 +106,23 @@ export function FeaturedGroups() {
                 <h3 className="font-semibold text-lg mb-1 line-clamp-1">
                   {group.nom}
                 </h3>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                  <MapPin className="h-4 w-4" />
-                  <span>
-                    {group.ville}, {group.departement}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {group.genres.slice(0, 3).map((genre) => (
-                    <Badge key={genre} variant="secondary" className="text-xs">
-                      {genre}
-                    </Badge>
-                  ))}
-                </div>
+                {(group.ville || group.departement) && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
+                    <MapPin className="h-4 w-4" />
+                    <span>
+                      {[group.ville, group.departement].filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                )}
+                {group.genres.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {group.genres.slice(0, 3).map((genre) => (
+                      <Badge key={genre.id} variant="secondary" className="text-xs">
+                        {genre.nom}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
