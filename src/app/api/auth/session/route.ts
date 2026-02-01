@@ -1,27 +1,19 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
-
-const secret = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "fallback-secret"
-);
+import { auth } from "@/lib/auth";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("authjs.session-token")?.value;
+    const session = await auth();
 
-    if (!token) {
+    if (!session?.user) {
       return NextResponse.json({});
     }
 
-    const { payload } = await jwtVerify(token, secret);
-
     return NextResponse.json({
       user: {
-        id: payload.id || payload.sub,
-        email: payload.email,
-        role: payload.role,
+        id: session.user.id,
+        email: session.user.email,
+        role: (session.user as { role?: string }).role || "ORGANISATEUR",
       },
     });
   } catch {

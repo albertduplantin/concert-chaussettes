@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { HeroSearch } from "@/components/home/hero-search";
+import { TrustStats } from "@/components/home/trust-stats";
+import { FeaturedGroups } from "@/components/home/featured-groups";
+import { Testimonials } from "@/components/home/testimonials";
 import {
   Music,
   Guitar,
@@ -12,6 +16,9 @@ import {
   CalendarDays,
   ArrowRight,
   CheckCircle,
+  Sparkles,
+  Heart,
+  Mic2,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -20,35 +27,49 @@ export default function HomePage() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background py-24 md:py-32">
-          <div className="container mx-auto px-4 text-center">
-            <div className="mx-auto max-w-3xl">
-              <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
+        {/* Hero Section - Design moderne avec gradient */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/20 dark:via-amber-950/20 dark:to-yellow-950/20 py-20 md:py-32">
+          {/* Éléments décoratifs */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-200/30 dark:bg-orange-800/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-amber-200/30 dark:bg-amber-800/10 rounded-full blur-3xl" />
+          </div>
+
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="mx-auto max-w-4xl text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium mb-6">
+                <Sparkles className="h-4 w-4" />
+                La musique live, chez vous
+              </div>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
                 Des concerts intimes,
                 <br />
-                <span className="text-primary">chez vous.</span>
+                <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+                  dans votre salon.
+                </span>
               </h1>
-              <p className="mt-6 text-lg text-muted-foreground md:text-xl">
-                Concert Chaussettes met en relation les organisateurs de concerts
-                priv&eacute;s et les groupes de musique. Vivez la musique autrement,
-                dans l&apos;intimit&eacute; d&apos;un salon.
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+                Trouvez le groupe parfait pour votre événement privé.
+                Des artistes locaux, une ambiance unique, des souvenirs inoubliables.
               </p>
-              <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <Button size="lg" asChild className="gap-2 text-lg px-8">
+            </div>
+
+            {/* Barre de recherche intégrée */}
+            <HeroSearch />
+
+            {/* Double navigation claire */}
+            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <p className="text-sm text-muted-foreground">ou inscrivez-vous :</p>
+              <div className="flex gap-3">
+                <Button variant="outline" asChild className="gap-2 border-2">
                   <Link href="/register?role=ORGANISATEUR">
-                    <Home className="h-5 w-5" />
+                    <Home className="h-4 w-4" />
                     Je suis organisateur
                   </Link>
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  asChild
-                  className="gap-2 text-lg px-8"
-                >
+                <Button variant="outline" asChild className="gap-2 border-2">
                   <Link href="/register?role=GROUPE">
-                    <Guitar className="h-5 w-5" />
+                    <Guitar className="h-4 w-4" />
                     Je suis un groupe
                   </Link>
                 </Button>
@@ -57,227 +78,182 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Comment ca marche */}
-        <section className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              Comment &ccedil;a marche ?
-            </h2>
-            <div className="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
-              <Card className="text-center border-none shadow-md">
-                <CardContent className="pt-8 pb-6">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                    <Guitar className="h-7 w-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">
-                    Les groupes s&apos;inscrivent
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Les artistes cr&eacute;ent leur profil avec bio, photos et vid&eacute;os
-                    YouTube pour se pr&eacute;senter.
-                  </p>
-                </CardContent>
-              </Card>
+        {/* Stats de confiance */}
+        <TrustStats />
 
-              <Card className="text-center border-none shadow-md">
-                <CardContent className="pt-8 pb-6">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                    <Home className="h-7 w-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">
-                    L&apos;organisateur choisit
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Parcourez les groupes de votre r&eacute;gion, &eacute;coutez leur musique
-                    et contactez-les directement.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="text-center border-none shadow-md">
-                <CardContent className="pt-8 pb-6">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                    <Music className="h-7 w-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">
-                    Le concert a lieu
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Cr&eacute;ez une page d&apos;&eacute;v&eacute;nement, invitez vos amis et profitez d&apos;un
-                    concert unique dans votre salon.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* Pour les organisateurs */}
+        {/* Comment ça marche */}
         <section className="py-20">
           <div className="container mx-auto px-4">
-            <div className="grid gap-12 md:grid-cols-2 items-center max-w-5xl mx-auto">
-              <div>
-                <h2 className="text-3xl font-bold mb-6">
-                  Pour les organisateurs
-                </h2>
-                <ul className="space-y-4">
-                  <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      D&eacute;couvrez les groupes de votre r&eacute;gion et &eacute;coutez leur musique
-                    </span>
-                  </li>
-                  <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      Cr&eacute;ez une page web unique pour chaque concert
-                    </span>
-                  </li>
-                  <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      G&eacute;rez les inscriptions avec jauge et liste d&apos;attente
-                    </span>
-                  </li>
-                  <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      Constituez votre carnet de contacts et r&eacute;invitez facilement
-                    </span>
-                  </li>
-                  <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      Utilisez des templates pour inviter par email, SMS ou WhatsApp
-                    </span>
-                  </li>
-                </ul>
-                <Button asChild className="mt-8 gap-2">
-                  <Link href="/register?role=ORGANISATEUR">
-                    Commencer <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Comment ça marche ?
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Trois étapes simples pour organiser votre concert privé
+              </p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
+              <div className="relative">
+                <Card className="text-center border-none shadow-lg hover:shadow-xl transition-shadow h-full">
+                  <CardContent className="pt-8 pb-6">
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold flex items-center justify-center text-sm">
+                      1
+                    </div>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30">
+                      <Guitar className="h-8 w-8 text-orange-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">
+                      Explorez les artistes
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Parcourez les profils des groupes, écoutez leur musique et regardez leurs vidéos.
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="p-6 text-center">
-                  <CalendarDays className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="font-semibold text-2xl">Simple</p>
-                  <p className="text-sm text-muted-foreground">
-                    Cr&eacute;ez un concert en quelques clics
-                  </p>
+
+              <div className="relative">
+                <Card className="text-center border-none shadow-lg hover:shadow-xl transition-shadow h-full">
+                  <CardContent className="pt-8 pb-6">
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold flex items-center justify-center text-sm">
+                      2
+                    </div>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30">
+                      <Mail className="h-8 w-8 text-orange-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">
+                      Contactez-les
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Envoyez une demande directe. Discutez des détails, du répertoire et du cachet.
+                    </p>
+                  </CardContent>
                 </Card>
-                <Card className="p-6 text-center">
-                  <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="font-semibold text-2xl">Social</p>
-                  <p className="text-sm text-muted-foreground">
-                    G&eacute;rez votre communaut&eacute;
-                  </p>
-                </Card>
-                <Card className="p-6 text-center">
-                  <Mail className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="font-semibold text-2xl">Pratique</p>
-                  <p className="text-sm text-muted-foreground">
-                    Invitez en un clic
-                  </p>
-                </Card>
-                <Card className="p-6 text-center">
-                  <Music className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="font-semibold text-2xl">Intime</p>
-                  <p className="text-sm text-muted-foreground">
-                    Des concerts uniques
-                  </p>
+              </div>
+
+              <div className="relative">
+                <Card className="text-center border-none shadow-lg hover:shadow-xl transition-shadow h-full">
+                  <CardContent className="pt-8 pb-6">
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold flex items-center justify-center text-sm">
+                      3
+                    </div>
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30">
+                      <Music className="h-8 w-8 text-orange-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-3">
+                      Vivez le concert
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Invitez vos proches et profitez d'une soirée musicale unique et intime.
+                    </p>
+                  </CardContent>
                 </Card>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Pour les groupes */}
+        {/* Groupes en vedette */}
+        <FeaturedGroups />
+
+        {/* Double section Organisateurs / Groupes */}
         <section className="py-20 bg-muted/30">
           <div className="container mx-auto px-4">
-            <div className="grid gap-12 md:grid-cols-2 items-center max-w-5xl mx-auto">
-              <div className="order-2 md:order-1">
-                <Card className="p-8">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Guitar className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">Votre profil</p>
-                        <p className="text-sm text-muted-foreground">
-                          Visible par les organisateurs
-                        </p>
-                      </div>
-                    </div>
-                    <div className="h-px bg-border" />
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <p>Bio et pr&eacute;sentation</p>
-                      <p>Photos du groupe</p>
-                      <p>Vid&eacute;os YouTube int&eacute;gr&eacute;es</p>
-                      <p>Genres musicaux</p>
-                      <p>Zone g&eacute;ographique</p>
-                      <p>Coordonn&eacute;es de contact</p>
-                    </div>
+            <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+              {/* Pour les organisateurs */}
+              <Card className="p-8 border-2 hover:border-orange-200 dark:hover:border-orange-800 transition-colors">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500">
+                    <Home className="h-6 w-6 text-white" />
                   </div>
-                </Card>
-              </div>
-              <div className="order-1 md:order-2">
-                <h2 className="text-3xl font-bold mb-6">Pour les groupes</h2>
-                <ul className="space-y-4">
+                  <h3 className="text-2xl font-bold">Pour les organisateurs</h3>
+                </div>
+                <ul className="space-y-4 mb-8">
                   <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      Cr&eacute;ez votre vitrine avec bio, photos et vid&eacute;os
-                    </span>
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span>Découvrez les groupes de votre région</span>
                   </li>
                   <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      Soyez d&eacute;couvert par des organisateurs de votre r&eacute;gion
-                    </span>
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span>Créez une page événement pour chaque concert</span>
                   </li>
                   <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      Jouez dans des lieux intimes et chaleureux
-                    </span>
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span>Gérez les inscriptions avec jauge automatique</span>
                   </li>
                   <li className="flex gap-3">
-                    <CheckCircle className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
-                    <span>
-                      Rencontrez un public passionn&eacute; et proche
-                    </span>
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span>Invitez facilement par email, SMS ou WhatsApp</span>
                   </li>
                 </ul>
-                <Button asChild className="mt-8 gap-2">
-                  <Link href="/register?role=GROUPE">
-                    Inscrire mon groupe <ArrowRight className="h-4 w-4" />
+                <Button asChild className="w-full gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
+                  <Link href="/register?role=ORGANISATEUR">
+                    Créer mon compte organisateur
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-              </div>
+              </Card>
+
+              {/* Pour les groupes */}
+              <Card className="p-8 border-2 hover:border-orange-200 dark:hover:border-orange-800 transition-colors">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500">
+                    <Mic2 className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold">Pour les groupes</h3>
+                </div>
+                <ul className="space-y-4 mb-8">
+                  <li className="flex gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span>Créez votre vitrine avec bio, photos et vidéos</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span>Soyez découvert par des organisateurs locaux</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span>Jouez dans des lieux intimes et chaleureux</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <span>Rencontrez un public passionné</span>
+                  </li>
+                </ul>
+                <Button asChild variant="outline" className="w-full gap-2 border-2">
+                  <Link href="/register?role=GROUPE">
+                    Inscrire mon groupe
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </Card>
             </div>
           </div>
         </section>
+
+        {/* Témoignages */}
+        <Testimonials />
 
         {/* CTA final */}
-        <section className="py-20">
+        <section className="py-20 bg-gradient-to-br from-orange-500 to-amber-500">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-4">
-              Pr&ecirc;t &agrave; vivre la musique autrement ?
+            <Heart className="h-12 w-12 text-white/80 mx-auto mb-6" />
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+              Prêt à vivre la musique autrement ?
             </h2>
-            <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
-              Rejoignez Concert Chaussettes et participez &agrave; l&apos;aventure
-              des concerts priv&eacute;s chez l&apos;habitant.
+            <p className="text-white/90 text-lg mb-8 max-w-xl mx-auto">
+              Rejoignez Concert Chaussettes et participez à l'aventure
+              des concerts privés chez l'habitant.
             </p>
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button size="lg" asChild className="gap-2 px-8">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" asChild className="gap-2 px-8 bg-white text-orange-600 hover:bg-white/90">
                 <Link href="/register">
-                  S&apos;inscrire gratuitement
+                  S'inscrire gratuitement
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="ghost" asChild>
-                <Link href="/login">D&eacute;j&agrave; un compte ? Se connecter</Link>
+              <Button size="lg" variant="ghost" asChild className="text-white hover:bg-white/10 hover:text-white">
+                <Link href="/login">Déjà un compte ? Se connecter</Link>
               </Button>
             </div>
           </div>

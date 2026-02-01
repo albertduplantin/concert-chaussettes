@@ -9,7 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Music, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Music, User, LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 export function Header() {
   const { data: session } = useSession();
@@ -45,6 +46,13 @@ export function Header() {
                     Tableau de bord
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile" className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    Mon profil
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={async () => {
                     await fetch("/api/auth/signout", {
@@ -52,10 +60,10 @@ export function Header() {
                     });
                     window.location.href = "/";
                   }}
-                  className="gap-2"
+                  className="gap-2 text-destructive"
                 >
                   <LogOut className="h-4 w-4" />
-                  Se d&eacute;connecter
+                  Se déconnecter
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

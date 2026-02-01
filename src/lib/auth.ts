@@ -5,13 +5,7 @@ import { compare } from "bcryptjs";
 import { db } from "@/lib/db";
 import { users, accounts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
 import type { Adapter, AdapterUser, AdapterAccount } from "next-auth/adapters";
-
-const jwtSecret = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "fallback-secret"
-);
 
 export interface SessionUser {
   id: string;
@@ -23,34 +17,6 @@ export interface SessionUser {
 
 export interface Session {
   user: SessionUser;
-}
-
-/**
- * Custom getSession() - décoder le JWT jose côté serveur.
- */
-export async function getSession(): Promise<Session | null> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("authjs.session-token")?.value;
-
-    if (!token) {
-      return null;
-    }
-
-    const { payload } = await jwtVerify(token, jwtSecret);
-
-    return {
-      user: {
-        id: (payload.id || payload.sub) as string,
-        email: payload.email as string,
-        role: payload.role as "GROUPE" | "ORGANISATEUR" | "ADMIN",
-        name: payload.name as string | null,
-        image: payload.image as string | null,
-      },
-    };
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -288,8 +254,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: "/login",
+    error: "/auth/error",
   },
   session: {
     strategy: "jwt",
   },
 });
+
+/**
+ * Récupère la session côté serveur en utilisant auth() de NextAuth
+ */
+export async function getSession(): Promise<Session | null> {
+  const session = await auth();
+  if (!session?.user) {
+    return null;
+  }
+
+  return {
+    user: {
+      id: session.user.id as string,
+      email: session.user.email as string,
+      role: (session.user as { role?: string }).role as "GROUPE" | "ORGANISATEUR" | "ADMIN" || "ORGANISATEUR",
+      name: session.user.name,
+      image: session.user.image,
+    },
+  };
+}

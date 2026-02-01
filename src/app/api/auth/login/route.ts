@@ -8,6 +8,8 @@ import { cookies } from "next/headers";
 import { loginSchema } from "@/lib/validation";
 import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
 import { sanitizeEmail } from "@/lib/sanitize";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { logAuditEvent, getClientIp, getUserAgent } from "@/lib/audit";
 
 const secret = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "fallback-secret"
@@ -19,6 +21,30 @@ const SESSION_DURATION_DAYS = 30;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting basé sur l'IP
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ||
+               request.headers.get("x-real-ip") ||
+               "unknown";
+
+    const rateLimit = checkRateLimit(`login:${ip}`, RATE_LIMITS.login);
+
+    if (!rateLimit.success) {
+      const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000);
+      return NextResponse.json(
+        {
+          error: "Trop de tentatives de connexion. Veuillez réessayer plus tard.",
+          retryAfter
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(retryAfter),
+            "X-RateLimit-Remaining": "0",
+          }
+        }
+      );
+    }
+
     const body = await request.json();
 
     // Validation avec Zod
@@ -75,6 +101,18 @@ export async function POST(request: NextRequest) {
       sameSite: isProduction ? "strict" : "lax",
       path: "/",
       maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60,
+    });
+
+    // Logger l'événement de connexion
+    await logAuditEvent({
+      userId: user.id,
+      action: "login",
+      ipAddress: getClientIp(request.headers),
+      userAgent: getUserAgent(request.headers),
+      metadata: {
+        email: user.email,
+        role: user.role,
+      },
     });
 
     return NextResponse.json({

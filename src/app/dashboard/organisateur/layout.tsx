@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
+import { FloatingCTA } from "@/components/ui/floating-cta";
 import { Search, CalendarDays, Users, Mail } from "lucide-react";
 
 export default function OrganisateurLayout({
@@ -43,6 +44,9 @@ export default function OrganisateurLayout({
         {/* Main content */}
         <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>
+
+      {/* Floating CTA */}
+      <FloatingCTA />
     </div>
   );
 }

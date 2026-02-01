@@ -8,6 +8,13 @@
       "when": 1769796550345,
       "tag": "0000_peaceful_talon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1769950229107,
+      "tag": "0001_chemical_joystick",
+      "breakpoints": true
     }
   ]
 }
