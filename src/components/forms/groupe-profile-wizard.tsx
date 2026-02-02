@@ -163,7 +163,8 @@ export function GroupeProfileWizard({
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Erreur lors de la sauvegarde");
+        const errorMessage = data.error?.message || data.error || "Erreur lors de la sauvegarde";
+        toast.error(typeof errorMessage === "string" ? errorMessage : "Erreur lors de la sauvegarde");
         return false;
       }
       return true;
