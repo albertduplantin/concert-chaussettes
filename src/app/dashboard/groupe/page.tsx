@@ -1,9 +1,35 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { groupes, genres, groupeGenres, subscriptions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { GroupeProfileForm } from "@/components/forms/groupe-profile-form";
+import { groupes, subscriptions, concerts } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  OnboardingChecklist,
+  StatsCard,
+  EmptyState,
+} from "@/components/dashboard";
+import {
+  Guitar,
+  Sparkles,
+  Eye,
+  CalendarDays,
+  Star,
+  TrendingUp,
+  User,
+  Image as ImageIcon,
+  Youtube,
+  MapPin,
+  FileText,
+  ChevronRight,
+  Music,
+} from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export default async function GroupeDashboard() {
   const session = await getSession();
@@ -19,6 +45,13 @@ export default async function GroupeDashboard() {
           genre: true,
         },
       },
+      concerts: {
+        orderBy: [desc(concerts.date)],
+        limit: 5,
+        with: {
+          organisateur: true,
+        },
+      },
     },
   });
 
@@ -26,45 +59,273 @@ export default async function GroupeDashboard() {
     redirect("/");
   }
 
-  const allGenres = await db.query.genres.findMany({
-    orderBy: (genres, { asc }) => [asc(genres.nom)],
-  });
-
   const subscription = await db.query.subscriptions.findFirst({
     where: eq(subscriptions.userId, session.user.id),
   });
 
   const isPremium = subscription?.plan === "PREMIUM";
 
+  // Calculate profile completion
+  const profileChecks = [
+    { id: "name", completed: !!groupe.nom, title: "Ajouter le nom du groupe", href: "/dashboard/groupe/profil" },
+    { id: "photo", completed: !!groupe.thumbnailUrl, title: "Ajouter une photo de profil", description: "Les groupes avec photos reçoivent 47% de clics en plus", href: "/dashboard/groupe/profil", action: "Ajouter" },
+    { id: "bio", completed: !!groupe.bio && groupe.bio.length > 50, title: "Rédiger votre bio", description: "Présentez-vous en quelques lignes", href: "/dashboard/groupe/profil", action: "Rédiger" },
+    { id: "photos", completed: (groupe.photos?.length || 0) >= 3, title: "Ajouter des photos (3 minimum)", description: "Montrez votre univers visuel", href: "/dashboard/groupe/profil", action: "Ajouter" },
+    { id: "videos", completed: (groupe.youtubeVideos?.length || 0) >= 1, title: "Ajouter une vidéo YouTube", description: "La vidéo est le meilleur moyen de convaincre", href: "/dashboard/groupe/profil", action: "Ajouter" },
+    { id: "location", completed: !!groupe.ville, title: "Indiquer votre localisation", description: "Pour être trouvé par les organisateurs proches", href: "/dashboard/groupe/profil", action: "Ajouter" },
+    { id: "genres", completed: groupe.groupeGenres.length > 0, title: "Sélectionner vos genres musicaux", href: "/dashboard/groupe/profil", action: "Choisir" },
+    { id: "contact", completed: !!groupe.contactEmail, title: "Ajouter vos coordonnées", href: "/dashboard/groupe/profil", action: "Ajouter" },
+  ];
+
+  const completedCount = profileChecks.filter((c) => c.completed).length;
+  const profileCompletion = Math.round((completedCount / profileChecks.length) * 100);
+  const isProfileComplete = profileCompletion >= 80;
+
+  // Mock stats (would come from analytics in production)
+  const stats = {
+    views: 127,
+    viewsTrend: 23,
+    concerts: groupe.concerts?.length || 0,
+    rating: 4.8,
+    reviews: 12,
+  };
+
+  // Upcoming concerts
+  const upcomingConcerts = groupe.concerts?.filter(
+    (c) => new Date(c.date) > new Date() && c.status === "PUBLIE"
+  ) || [];
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Mon profil de groupe</h1>
-        <p className="text-muted-foreground mt-1">
-          Compl&eacute;tez votre profil pour &ecirc;tre visible par les organisateurs
-        </p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 p-8 text-white">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm">
+              <Guitar className="h-6 w-6" />
+            </div>
+            {isPremium && (
+              <Badge className="bg-white/20 text-white border-0">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Premium
+              </Badge>
+            )}
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+            Bonjour {groupe.nom} !
+          </h1>
+          <p className="text-white/90 max-w-xl">
+            {isProfileComplete
+              ? "Votre profil est optimisé. Continuez à le faire vivre avec de nouvelles photos et vidéos !"
+              : "Complétez votre profil pour apparaître dans les recherches et recevoir des demandes."}
+          </p>
+        </div>
       </div>
 
-      <GroupeProfileForm
-        groupe={{
-          id: groupe.id,
-          nom: groupe.nom,
-          bio: groupe.bio,
-          photos: groupe.photos ?? [],
-          thumbnailUrl: groupe.thumbnailUrl ?? null,
-          youtubeVideos: groupe.youtubeVideos ?? [],
-          ville: groupe.ville,
-          codePostal: groupe.codePostal,
-          departement: groupe.departement,
-          region: groupe.region,
-          contactEmail: groupe.contactEmail,
-          contactTel: groupe.contactTel,
-          contactSite: groupe.contactSite,
-          genres: groupe.groupeGenres.map((gg) => gg.genre.id),
-        }}
-        allGenres={allGenres}
-        isPremium={isPremium}
-      />
+      {/* Profile completion checklist (if not complete) */}
+      {!isProfileComplete && (
+        <OnboardingChecklist
+          title="Complétez votre profil"
+          items={profileChecks}
+        />
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard
+          title="Vues du profil"
+          value={stats.views}
+          icon={Eye}
+          trend={{ value: stats.viewsTrend, label: "vs mois dernier" }}
+        />
+        <StatsCard
+          title="Concerts"
+          value={stats.concerts}
+          icon={CalendarDays}
+          iconColor="text-blue-600"
+          iconBg="bg-blue-100 dark:bg-blue-900/30"
+        />
+        <StatsCard
+          title="Note moyenne"
+          value={`${stats.rating}/5`}
+          icon={Star}
+          iconColor="text-yellow-600"
+          iconBg="bg-yellow-100 dark:bg-yellow-900/30"
+          subtitle={`${stats.reviews} avis`}
+        />
+        <StatsCard
+          title="Profil"
+          value={`${profileCompletion}%`}
+          icon={TrendingUp}
+          iconColor="text-green-600"
+          iconBg="bg-green-100 dark:bg-green-900/30"
+          subtitle={isProfileComplete ? "Complet" : "À améliorer"}
+        />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Profile summary */}
+        <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">Aperçu du profil</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/groupe/profil">
+                Modifier
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              {groupe.thumbnailUrl ? (
+                <img
+                  src={groupe.thumbnailUrl}
+                  alt={groupe.nom}
+                  className="w-16 h-16 rounded-xl object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center">
+                  <User className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1">
+                <h3 className="font-semibold">{groupe.nom}</h3>
+                {groupe.ville && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {groupe.ville}, {groupe.departement}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                  <ImageIcon className="h-4 w-4" />
+                </div>
+                <p className="text-lg font-semibold">{groupe.photos?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Photos</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                  <Youtube className="h-4 w-4" />
+                </div>
+                <p className="text-lg font-semibold">{groupe.youtubeVideos?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Vidéos</p>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                  <Music className="h-4 w-4" />
+                </div>
+                <p className="text-lg font-semibold">{groupe.groupeGenres.length}</p>
+                <p className="text-xs text-muted-foreground">Genres</p>
+              </div>
+            </div>
+
+            {groupe.groupeGenres.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-2">
+                {groupe.groupeGenres.slice(0, 5).map((gg) => (
+                  <Badge key={gg.genre.id} variant="secondary" className="text-xs">
+                    {gg.genre.nom}
+                  </Badge>
+                ))}
+                {groupe.groupeGenres.length > 5 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{groupe.groupeGenres.length - 5}
+                  </Badge>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Upcoming concerts */}
+        <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">Prochains concerts</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/groupe/concerts">
+                Voir tout
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {upcomingConcerts.length > 0 ? (
+              <div className="space-y-3">
+                {upcomingConcerts.slice(0, 3).map((concert) => (
+                  <div
+                    key={concert.id}
+                    className="flex items-center gap-4 p-3 rounded-lg bg-muted/30"
+                  >
+                    <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30">
+                      <span className="text-lg font-bold text-orange-600">
+                        {format(new Date(concert.date), "d")}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground uppercase">
+                        {format(new Date(concert.date), "MMM", { locale: fr })}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{concert.titre}</p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {concert.ville || "Lieu à confirmer"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                  <CalendarDays className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Aucun concert à venir
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Les organisateurs vous contacteront bientôt !
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tips */}
+      <Card className="border-0 shadow-lg bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+              <Sparkles className="h-5 w-5 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-1">Conseil du jour</h3>
+              <p className="text-sm text-muted-foreground">
+                {!groupe.youtubeVideos?.length
+                  ? "Ajoutez une vidéo YouTube de vous en live ! C'est le meilleur moyen de convaincre les organisateurs."
+                  : !groupe.bio || groupe.bio.length < 100
+                  ? "Une bio détaillée aide les organisateurs à vous connaître. Parlez de votre parcours, votre style, vos influences."
+                  : (groupe.photos?.length || 0) < 5
+                  ? "Ajoutez plus de photos ! Les profils avec 5+ photos reçoivent 2x plus de demandes."
+                  : "Votre profil est bien rempli ! Pensez à le mettre à jour régulièrement avec de nouvelles photos et vidéos."}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="shrink-0"
+            >
+              <Link href="/dashboard/groupe/profil">
+                Modifier le profil
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
