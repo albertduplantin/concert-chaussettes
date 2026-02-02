@@ -307,6 +307,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
 /**
  * Récupère la session côté serveur en utilisant auth() de NextAuth
+ * Vérifie toujours la base de données pour needsOnboarding pour éviter les problèmes de cache JWT
  */
 export async function getSession(): Promise<Session | null> {
   const session = await auth();
@@ -314,14 +315,30 @@ export async function getSession(): Promise<Session | null> {
     return null;
   }
 
+  const userId = session.user.id as string;
+  const userEmail = session.user.email as string;
+
+  // Always check DB for needsOnboarding to avoid stale JWT issues
+  const dbUser = await db.query.users.findFirst({
+    where: eq(users.email, userEmail),
+    with: {
+      groupe: true,
+      organisateur: true,
+    },
+  });
+
+  const needsOnboarding = dbUser
+    ? !dbUser.passwordHash && !dbUser.groupe && !dbUser.organisateur
+    : false;
+
   return {
     user: {
-      id: session.user.id as string,
-      email: session.user.email as string,
-      role: (session.user as { role?: string }).role as "GROUPE" | "ORGANISATEUR" | "ADMIN" || "ORGANISATEUR",
+      id: userId,
+      email: userEmail,
+      role: dbUser?.role as "GROUPE" | "ORGANISATEUR" | "ADMIN" || "ORGANISATEUR",
       name: session.user.name,
       image: session.user.image,
-      needsOnboarding: (session.user as { needsOnboarding?: boolean }).needsOnboarding,
+      needsOnboarding,
     },
   };
 }
