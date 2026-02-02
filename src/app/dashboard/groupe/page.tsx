@@ -27,6 +27,7 @@ import {
   FileText,
   ChevronRight,
   Music,
+  Rocket,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -66,15 +67,16 @@ export default async function GroupeDashboard() {
   const isPremium = subscription?.plan === "PREMIUM";
 
   // Calculate profile completion
+  const wizardHref = "/dashboard/groupe/onboarding";
   const profileChecks = [
-    { id: "name", completed: !!groupe.nom, title: "Ajouter le nom du groupe", href: "/dashboard/groupe/profil" },
-    { id: "photo", completed: !!groupe.thumbnailUrl, title: "Ajouter une photo de profil", description: "Les groupes avec photos reçoivent 47% de clics en plus", href: "/dashboard/groupe/profil", action: "Ajouter" },
-    { id: "bio", completed: !!groupe.bio && groupe.bio.length > 50, title: "Rédiger votre bio", description: "Présentez-vous en quelques lignes", href: "/dashboard/groupe/profil", action: "Rédiger" },
-    { id: "photos", completed: (groupe.photos?.length || 0) >= 3, title: "Ajouter des photos (3 minimum)", description: "Montrez votre univers visuel", href: "/dashboard/groupe/profil", action: "Ajouter" },
-    { id: "videos", completed: (groupe.youtubeVideos?.length || 0) >= 1, title: "Ajouter une vidéo YouTube", description: "La vidéo est le meilleur moyen de convaincre", href: "/dashboard/groupe/profil", action: "Ajouter" },
-    { id: "location", completed: !!groupe.ville, title: "Indiquer votre localisation", description: "Pour être trouvé par les organisateurs proches", href: "/dashboard/groupe/profil", action: "Ajouter" },
-    { id: "genres", completed: groupe.groupeGenres.length > 0, title: "Sélectionner vos genres musicaux", href: "/dashboard/groupe/profil", action: "Choisir" },
-    { id: "contact", completed: !!groupe.contactEmail, title: "Ajouter vos coordonnées", href: "/dashboard/groupe/profil", action: "Ajouter" },
+    { id: "name", completed: !!groupe.nom, title: "Ajouter le nom du groupe", href: wizardHref },
+    { id: "photo", completed: !!groupe.thumbnailUrl, title: "Ajouter une photo de profil", description: "Les groupes avec photos reçoivent 47% de clics en plus", href: wizardHref, action: "Ajouter" },
+    { id: "bio", completed: !!groupe.bio && groupe.bio.length > 50, title: "Rédiger votre bio", description: "Présentez-vous en quelques lignes", href: wizardHref, action: "Rédiger" },
+    { id: "photos", completed: (groupe.photos?.length || 0) >= 3, title: "Ajouter des photos (3 minimum)", description: "Montrez votre univers visuel", href: wizardHref, action: "Ajouter" },
+    { id: "videos", completed: (groupe.youtubeVideos?.length || 0) >= 1, title: "Ajouter une vidéo YouTube", description: "La vidéo est le meilleur moyen de convaincre", href: wizardHref, action: "Ajouter" },
+    { id: "location", completed: !!groupe.ville, title: "Indiquer votre localisation", description: "Pour être trouvé par les organisateurs proches", href: wizardHref, action: "Ajouter" },
+    { id: "genres", completed: groupe.groupeGenres.length > 0, title: "Sélectionner vos genres musicaux", href: wizardHref, action: "Choisir" },
+    { id: "contact", completed: !!groupe.contactEmail, title: "Ajouter vos coordonnées", href: wizardHref, action: "Ajouter" },
   ];
 
   const completedCount = profileChecks.filter((c) => c.completed).length;
@@ -115,11 +117,26 @@ export default async function GroupeDashboard() {
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
             Bonjour {groupe.nom} !
           </h1>
-          <p className="text-white/90 max-w-xl">
+          <p className="text-white/90 max-w-xl mb-4">
             {isProfileComplete
               ? "Votre profil est optimisé. Continuez à le faire vivre avec de nouvelles photos et vidéos !"
               : "Complétez votre profil pour apparaître dans les recherches et recevoir des demandes."}
           </p>
+          {!isProfileComplete && (
+            <div className="flex gap-3">
+              <Button asChild className="bg-white text-orange-600 hover:bg-white/90 gap-2">
+                <Link href="/dashboard/groupe/onboarding">
+                  <Rocket className="h-4 w-4" />
+                  Compléter mon profil guidé
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                <Link href="/dashboard/groupe/profil">
+                  Tout remplir d'un coup
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
