@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ interface RoleSelectionFormProps {
 }
 
 export function RoleSelectionForm({ userName }: RoleSelectionFormProps) {
-  const router = useRouter();
+  const { update } = useSession();
   const [selectedRole, setSelectedRole] = useState<"ORGANISATEUR" | "GROUPE" | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,13 +39,16 @@ export function RoleSelectionForm({ userName }: RoleSelectionFormProps) {
         return;
       }
 
+      // Force refresh the session to update needsOnboarding flag
+      await update();
+
       toast.success("Bienvenue sur Concert Chaussettes !");
 
-      // Redirect to appropriate dashboard
+      // Hard redirect to ensure fresh session state
       if (selectedRole === "GROUPE") {
-        router.push("/dashboard/groupe");
+        window.location.href = "/dashboard/groupe";
       } else {
-        router.push("/dashboard/organisateur");
+        window.location.href = "/dashboard/organisateur";
       }
     } catch {
       toast.error("Une erreur est survenue");
