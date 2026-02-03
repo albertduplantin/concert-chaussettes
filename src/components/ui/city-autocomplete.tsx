@@ -40,7 +40,7 @@ export function CityAutocomplete({
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<CityResult[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Close dropdown on click outside
   useEffect(() => {
