@@ -262,7 +262,7 @@ export function GroupeProfileWizard({
                   className="resize-none"
                 />
                 <p className="text-xs text-muted-foreground text-right">
-                  {bio.length} caractères {bio.length < 100 && "(minimum recommandé : 100)"}
+                  {bio.length} caractères {bio.length < 50 ? "(minimum requis : 50)" : bio.length < 100 ? "(recommandé : 100+)" : "✓"}
                 </p>
               </div>
             </div>
@@ -281,8 +281,16 @@ export function GroupeProfileWizard({
             </div>
             <ImageUploader
               images={photos}
-              onImagesChange={setPhotos}
+              onImagesChange={(newPhotos) => {
+                setPhotos(newPhotos);
+                // Auto-set thumbnail to first photo if not set
+                if (!thumbnailUrl && newPhotos.length > 0) {
+                  setThumbnailUrl(newPhotos[0]);
+                }
+              }}
               maxImages={maxPhotos}
+              thumbnailUrl={thumbnailUrl}
+              onThumbnailChange={setThumbnailUrl}
               disabled={isLoading}
             />
             {!isPremium && photos.length >= maxPhotos && (
