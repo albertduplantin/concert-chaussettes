@@ -219,14 +219,38 @@ export function GroupeProfileWizard({
             </div>
             <div className="flex justify-center">
               <div className="w-full max-w-md">
+                {/* Profile photo uploader - always allows replacing */}
                 <ImageUploader
-                  images={thumbnailUrl ? [thumbnailUrl] : []}
-                  onImagesChange={(imgs) => setThumbnailUrl(imgs[0] || null)}
+                  images={[]}
+                  onImagesChange={(imgs) => {
+                    if (imgs.length > 0) {
+                      setThumbnailUrl(imgs[imgs.length - 1]);
+                    }
+                  }}
                   maxImages={1}
-                  thumbnailUrl={thumbnailUrl}
-                  onThumbnailChange={setThumbnailUrl}
                   disabled={isLoading}
                 />
+                {/* Show current profile photo if exists */}
+                {thumbnailUrl && (
+                  <div className="mt-4">
+                    <p className="text-sm text-muted-foreground mb-2 text-center">Photo actuelle :</p>
+                    <div className="relative w-32 h-32 mx-auto rounded-xl overflow-hidden ring-2 ring-orange-500 ring-offset-2">
+                      <img
+                        src={thumbnailUrl}
+                        alt="Photo de profil"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setThumbnailUrl(null)}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        title="Supprimer"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
