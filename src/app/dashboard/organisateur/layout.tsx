@@ -19,9 +19,14 @@ import { cn } from "@/lib/utils";
 const sidebarLinks = [
   {
     href: "/dashboard/organisateur",
-    label: "Rechercher des groupes",
-    icon: Search,
+    label: "Dashboard",
+    icon: Home,
     exact: true,
+  },
+  {
+    href: "/dashboard/organisateur/search",
+    label: "Trouver un groupe",
+    icon: Search,
   },
   {
     href: "/dashboard/organisateur/concerts",
