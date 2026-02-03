@@ -63,7 +63,57 @@ async function checkGroupeLimits(userId: string, maxPhotos: number) {
 
 export const ourFileRouter = {
   /**
-   * Upload de photos pour les profils de groupes
+   * Upload de la photo de profil (thumbnail) - pas de limite
+   */
+  groupeThumbnail: f({
+    image: {
+      maxFileSize: UPLOAD_CONFIG.maxFileSize,
+      maxFileCount: 1,
+    },
+  })
+    .middleware(async () => {
+      const auth = await authMiddleware();
+
+      if (auth.role !== "GROUPE") {
+        throw new UploadThingError("Seuls les groupes peuvent uploader une photo de profil");
+      }
+
+      const groupe = await db.query.groupes.findFirst({
+        where: eq(groupes.userId, auth.userId),
+      });
+
+      if (!groupe) {
+        throw new UploadThingError("Profil groupe non trouvé");
+      }
+
+      return {
+        ...auth,
+        groupeId: groupe.id,
+      };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log(`[UPLOAD] Thumbnail uploadée pour groupe ${metadata.groupeId}`);
+      console.log(`[UPLOAD] URL: ${file.ufsUrl}`);
+
+      // Mettre à jour uniquement la thumbnailUrl (pas la galerie photos)
+      await db
+        .update(groupes)
+        .set({
+          thumbnailUrl: file.ufsUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(groupes.id, metadata.groupeId));
+
+      return {
+        uploadedBy: metadata.userId,
+        url: file.ufsUrl,
+        name: file.name,
+        size: file.size,
+      };
+    }),
+
+  /**
+   * Upload de photos pour les profils de groupes (galerie)
    */
   groupePhoto: f({
     image: {
