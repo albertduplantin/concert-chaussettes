@@ -200,6 +200,7 @@ export const organisateurs = pgTable("organisateurs", {
     .unique(),
   nom: varchar("nom", { length: 255 }).notNull(),
   bio: text("bio"),
+  thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
   // Localisation
   ville: varchar("ville", { length: 255 }),
   codePostal: varchar("code_postal", { length: 10 }),

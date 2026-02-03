@@ -74,6 +74,7 @@ export async function PUT(request: NextRequest) {
       .set({
         nom: sanitizeText(data.nom),
         bio: data.bio ? sanitizeText(data.bio) : null,
+        thumbnailUrl: data.thumbnailUrl || null,
         ville: data.ville ? sanitizeText(data.ville) : null,
         codePostal: data.codePostal || null,
         departement: data.departement ? sanitizeText(data.departement) : null,

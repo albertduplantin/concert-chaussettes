@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Home,
   Music,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,11 @@ const sidebarLinks = [
     href: "/dashboard/organisateur/messages",
     label: "Templates messages",
     icon: Mail,
+  },
+  {
+    href: "/dashboard/organisateur/profil",
+    label: "Mon profil",
+    icon: UserCircle,
   },
 ];
 

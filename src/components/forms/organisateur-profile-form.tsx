@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CityAutocomplete } from "@/components/ui/city-autocomplete";
+import { ThumbnailUploader } from "@/components/ui/thumbnail-uploader";
 import { toast } from "sonner";
-import { Loader2, Save, MapPin } from "lucide-react";
+import { Loader2, Save, MapPin, Sparkles, Camera } from "lucide-react";
 
 interface OrganisateurProfileFormProps {
   organisateur: {
     id: string;
     nom: string;
     bio: string | null;
+    thumbnailUrl: string | null;
     ville: string | null;
     codePostal: string | null;
     departement: string | null;
@@ -27,10 +30,23 @@ export function OrganisateurProfileForm({ organisateur }: OrganisateurProfileFor
 
   const [nom, setNom] = useState(organisateur.nom);
   const [bio, setBio] = useState(organisateur.bio || "");
+  const [thumbnailUrl, setThumbnailUrl] = useState(organisateur.thumbnailUrl);
   const [ville, setVille] = useState(organisateur.ville || "");
   const [codePostal, setCodePostal] = useState(organisateur.codePostal || "");
   const [departement, setDepartement] = useState(organisateur.departement || "");
   const [region, setRegion] = useState(organisateur.region || "");
+
+  function handleCitySelect(city: {
+    ville: string;
+    codePostal: string;
+    departement: string;
+    region: string;
+  }) {
+    setVille(city.ville);
+    setCodePostal(city.codePostal);
+    setDepartement(city.departement);
+    setRegion(city.region);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,6 +61,7 @@ export function OrganisateurProfileForm({ organisateur }: OrganisateurProfileFor
         body: JSON.stringify({
           nom: nom || "Organisateur",
           bio: emptyToNull(bio),
+          thumbnailUrl: thumbnailUrl,
           ville: emptyToNull(ville),
           codePostal: emptyToNull(codePostal),
           departement: emptyToNull(departement),
@@ -70,6 +87,20 @@ export function OrganisateurProfileForm({ organisateur }: OrganisateurProfileFor
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Photo de profil */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Camera className="h-4 w-4 text-muted-foreground" />
+          <Label className="text-base font-medium">Photo de profil</Label>
+        </div>
+        <ThumbnailUploader
+          thumbnailUrl={thumbnailUrl}
+          onThumbnailChange={setThumbnailUrl}
+          endpoint="organisateurThumbnail"
+          disabled={isLoading}
+        />
+      </div>
+
       {/* Nom */}
       <div className="space-y-2">
         <Label htmlFor="nom">
@@ -111,16 +142,28 @@ export function OrganisateurProfileForm({ organisateur }: OrganisateurProfileFor
           <Label className="text-base font-medium">Localisation</Label>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="ville">Ville</Label>
-            <Input
-              id="ville"
-              value={ville}
-              onChange={(e) => setVille(e.target.value)}
-              placeholder="Paris"
-            />
-          </div>
+        {/* City autocomplete */}
+        <div className="space-y-2">
+          <Label htmlFor="ville">
+            Ville
+            <span className="ml-2 text-xs text-muted-foreground font-normal inline-flex items-center gap-1">
+              <Sparkles className="h-3 w-3 text-orange-500" />
+              Autocomplétion
+            </span>
+          </Label>
+          <CityAutocomplete
+            value={ville}
+            onChange={setVille}
+            onSelect={handleCitySelect}
+            placeholder="Rechercher une ville..."
+            disabled={isLoading}
+          />
+          <p className="text-xs text-muted-foreground">
+            Sélectionnez une ville pour remplir automatiquement les autres champs.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="codePostal">Code postal</Label>
             <Input
@@ -131,9 +174,6 @@ export function OrganisateurProfileForm({ organisateur }: OrganisateurProfileFor
               maxLength={5}
             />
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="departement">Département</Label>
             <Input

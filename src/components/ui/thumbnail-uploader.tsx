@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { useUploadThing, UPLOAD_CONFIG, formatFileSize } from "@/lib/uploadthing";
 import { compressImage, isValidImageType } from "@/lib/image-compression";
-import { Button } from "@/components/ui/button";
 import { Upload, X, Loader2, AlertCircle, User } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -13,6 +12,7 @@ import Image from "next/image";
 interface ThumbnailUploaderProps {
   thumbnailUrl: string | null;
   onThumbnailChange: (url: string | null) => void;
+  endpoint?: "groupeThumbnail" | "organisateurThumbnail";
   disabled?: boolean;
   className?: string;
 }
@@ -20,6 +20,7 @@ interface ThumbnailUploaderProps {
 export function ThumbnailUploader({
   thumbnailUrl,
   onThumbnailChange,
+  endpoint = "groupeThumbnail",
   disabled = false,
   className,
 }: ThumbnailUploaderProps) {
@@ -27,7 +28,7 @@ export function ThumbnailUploader({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const { startUpload, isUploading } = useUploadThing("groupeThumbnail", {
+  const { startUpload, isUploading } = useUploadThing(endpoint, {
     onClientUploadComplete: (res) => {
       if (res && res.length > 0) {
         onThumbnailChange(res[0].url);
@@ -101,22 +102,22 @@ export function ThumbnailUploader({
       {thumbnailUrl && (
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm text-muted-foreground">Photo actuelle :</p>
-          <div className="relative w-40 h-40 rounded-full overflow-hidden ring-4 ring-orange-500 ring-offset-2 ring-offset-background">
+          <div className="relative w-32 h-32 rounded-full overflow-hidden ring-4 ring-orange-500 ring-offset-2 ring-offset-background">
             <Image
               src={thumbnailUrl}
               alt="Photo de profil"
               fill
               className="object-cover"
-              sizes="160px"
+              sizes="128px"
             />
             <button
               type="button"
               onClick={handleRemove}
               disabled={disabled}
-              className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+              className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
               title="Supprimer"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </button>
           </div>
         </div>

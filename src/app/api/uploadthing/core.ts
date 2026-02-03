@@ -2,7 +2,7 @@ import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { groupes, subscriptions } from "@/lib/db/schema";
+import { groupes, organisateurs, subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { UPLOAD_CONFIG } from "@/lib/uploadthing";
 
@@ -103,6 +103,55 @@ export const ourFileRouter = {
           updatedAt: new Date(),
         })
         .where(eq(groupes.id, metadata.groupeId));
+
+      return {
+        uploadedBy: metadata.userId,
+        url: file.ufsUrl,
+        name: file.name,
+        size: file.size,
+      };
+    }),
+
+  /**
+   * Upload de la photo de profil organisateur
+   */
+  organisateurThumbnail: f({
+    image: {
+      maxFileSize: UPLOAD_CONFIG.maxFileSize,
+      maxFileCount: 1,
+    },
+  })
+    .middleware(async () => {
+      const auth = await authMiddleware();
+
+      if (auth.role !== "ORGANISATEUR") {
+        throw new UploadThingError("Seuls les organisateurs peuvent uploader une photo de profil");
+      }
+
+      const organisateur = await db.query.organisateurs.findFirst({
+        where: eq(organisateurs.userId, auth.userId),
+      });
+
+      if (!organisateur) {
+        throw new UploadThingError("Profil organisateur non trouvé");
+      }
+
+      return {
+        ...auth,
+        organisateurId: organisateur.id,
+      };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log(`[UPLOAD] Thumbnail uploadée pour organisateur ${metadata.organisateurId}`);
+      console.log(`[UPLOAD] URL: ${file.ufsUrl}`);
+
+      await db
+        .update(organisateurs)
+        .set({
+          thumbnailUrl: file.ufsUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(organisateurs.id, metadata.organisateurId));
 
       return {
         uploadedBy: metadata.userId,

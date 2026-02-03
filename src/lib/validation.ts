@@ -156,6 +156,11 @@ export const groupeProfileSchema = z.object({
 export const organisateurProfileSchema = z.object({
   nom: requiredTextSchema("Le nom", 1, 100),
   bio: bioSchema.nullable(),
+  thumbnailUrl: z
+    .union([photoUrlSchema, z.literal(""), z.null()])
+    .optional()
+    .nullable()
+    .transform((val) => val || null),
   ville: optionalTextSchema,
   codePostal: codePostalSchema,
   departement: optionalTextSchema,
