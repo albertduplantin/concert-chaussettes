@@ -152,6 +152,16 @@ export const groupeProfileSchema = z.object({
     .transform((arr) => arr.filter(Boolean)),
 });
 
+// Schéma de profil organisateur
+export const organisateurProfileSchema = z.object({
+  nom: requiredTextSchema("Le nom", 1, 100),
+  bio: bioSchema.nullable(),
+  ville: optionalTextSchema,
+  codePostal: codePostalSchema,
+  departement: optionalTextSchema,
+  region: optionalTextSchema,
+});
+
 // Schéma de concert renforcé
 export const concertSchema = z.object({
   titre: requiredTextSchema("Le titre", 1, 200),
