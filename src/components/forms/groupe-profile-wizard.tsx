@@ -141,19 +141,22 @@ export function GroupeProfileWizard({
   async function saveProgress() {
     setIsLoading(true);
     try {
+      // Convert empty strings to null for optional fields to pass validation
+      const emptyToNull = (val: string) => val.trim() === "" ? null : val;
+
       const res = await fetch("/api/groupe/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nom,
-          bio,
-          ville,
-          codePostal,
-          departement,
-          region,
-          contactEmail,
-          contactTel,
-          contactSite,
+          nom: nom || "Mon Groupe",
+          bio: emptyToNull(bio),
+          ville: emptyToNull(ville),
+          codePostal: emptyToNull(codePostal),
+          departement: emptyToNull(departement),
+          region: emptyToNull(region),
+          contactEmail: emptyToNull(contactEmail),
+          contactTel: emptyToNull(contactTel),
+          contactSite: emptyToNull(contactSite),
           genres: selectedGenres,
           photos,
           thumbnailUrl,

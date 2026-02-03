@@ -86,9 +86,13 @@ export const uuidSchema = z.string().uuid("ID invalide");
 
 // Code postal français
 export const codePostalSchema = z
-  .string()
-  .regex(/^\d{5}$/, "Code postal invalide (5 chiffres)")
-  .optional();
+  .union([
+    z.string().regex(/^\d{5}$/, "Code postal invalide (5 chiffres)"),
+    z.literal(""),
+    z.null(),
+  ])
+  .optional()
+  .transform((val) => (val === "" ? null : val));
 
 // Bio avec limite de caractères
 export const bioSchema = z
@@ -117,18 +121,21 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Le mot de passe est requis"),
 });
 
+// Helper pour les champs texte optionnels qui peuvent être null
+const optionalTextSchema = safeTextSchema.optional().nullable().transform((val) => val || null);
+
 // Schéma de profil groupe renforcé
 export const groupeProfileSchema = z.object({
   nom: requiredTextSchema("Le nom du groupe", 1, 100),
-  bio: bioSchema,
-  ville: safeTextSchema.optional(),
+  bio: bioSchema.nullable(),
+  ville: optionalTextSchema,
   codePostal: codePostalSchema,
-  departement: safeTextSchema.optional(),
-  region: safeTextSchema.optional(),
-  contactEmail: z.union([emailSchema, z.literal("")]).optional(),
-  contactTel: phoneSchema.optional(),
-  contactSite: urlSchema.optional(),
-  genres: z.array(uuidSchema).max(10, "Maximum 10 genres"),
+  departement: optionalTextSchema,
+  region: optionalTextSchema,
+  contactEmail: z.union([emailSchema, z.literal(""), z.null()]).optional().nullable().transform((val) => val || null),
+  contactTel: z.union([phoneSchema, z.literal(""), z.null()]).optional().nullable().transform((val) => val || null),
+  contactSite: z.union([urlSchema, z.literal(""), z.null()]).optional().nullable().transform((val) => val || null),
+  genres: z.array(uuidSchema).max(10, "Maximum 10 genres").default([]),
   photos: z
     .array(photoUrlSchema)
     .max(10, "Maximum 10 photos")
@@ -136,10 +143,12 @@ export const groupeProfileSchema = z.object({
   thumbnailUrl: z
     .union([photoUrlSchema, z.literal(""), z.null()])
     .optional()
-    .nullable(),
+    .nullable()
+    .transform((val) => val || null),
   youtubeVideos: z
-    .array(youtubeUrlSchema)
+    .array(z.string())
     .max(5, "Maximum 5 vidéos")
+    .default([])
     .transform((arr) => arr.filter(Boolean)),
 });
 
