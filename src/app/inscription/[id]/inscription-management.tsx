@@ -348,8 +348,7 @@ export function InscriptionManagement({
 
           <Button
             onClick={() => setIsEditing(true)}
-            variant="outline"
-            className="w-full mt-4 border-white/20 hover:bg-white/10"
+            className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white"
           >
             <Edit3 className="h-4 w-4 mr-2" />
             Modifier mon inscription
