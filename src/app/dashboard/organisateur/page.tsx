@@ -135,7 +135,7 @@ export default async function OrganisateurDashboard() {
                   Nouveau concert
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="border-white/30 text-white hover:bg-white/10">
+              <Button asChild className="bg-white/20 hover:bg-white/30 text-white border-0">
                 <Link href="/dashboard/organisateur/search">
                   <Search className="h-4 w-4 mr-2" />
                   Trouver un groupe
