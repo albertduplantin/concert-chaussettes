@@ -255,11 +255,17 @@ export const inscriptions = pgTable("inscriptions", {
     .notNull()
     .references(() => concerts.id, { onDelete: "cascade" }),
   nom: varchar("nom", { length: 255 }).notNull(),
+  prenom: varchar("prenom", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
   telephone: varchar("telephone", { length: 20 }),
   nombrePersonnes: integer("nombre_personnes").notNull().default(1),
   status: inscriptionStatusEnum("status").notNull().default("CONFIRME"),
+  // Token pour gérer l'inscription sans login (magic link)
+  managementToken: varchar("management_token", { length: 64 }),
+  // Visibilité dans la liste des invités
+  showInGuestList: boolean("show_in_guest_list").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // --- Contact (CRM organisateur) ---

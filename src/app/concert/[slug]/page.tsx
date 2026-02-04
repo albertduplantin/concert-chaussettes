@@ -10,6 +10,7 @@ import { InscriptionForm } from "@/components/forms/inscription-form";
 import Image from "next/image";
 import Link from "next/link";
 import { ConcertPhotoGallery } from "./photo-gallery";
+import { GuestList } from "./guest-list";
 
 interface ConcertPageProps {
   params: Promise<{ slug: string }>;
@@ -49,6 +50,14 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
     : null;
 
   const isPast = new Date(concert.date) < new Date();
+
+  // Get guests who opted in to show in guest list
+  const visibleGuests = concert.inscriptions
+    .filter((i) => i.status === "CONFIRME" && i.showInGuestList !== false)
+    .map((i) => ({
+      prenom: i.prenom,
+      nombrePersonnes: i.nombrePersonnes,
+    }));
 
   // Get group photos
   const groupePhotos = concert.groupe?.photos as string[] | undefined;
@@ -288,6 +297,13 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
                   />
                 )}
               </div>
+
+              {/* Guest list */}
+              {confirmedCount > 0 && (
+                <div className="mt-6">
+                  <GuestList guests={visibleGuests} totalCount={confirmedCount} />
+                </div>
+              )}
 
               {/* Trust indicators */}
               <div className="mt-6 text-center text-sm text-white/40">

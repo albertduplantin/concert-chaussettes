@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
       ville: g.ville,
       departement: g.departement,
       region: g.region,
+      latitude: g.latitude,
+      longitude: g.longitude,
       photos: g.photos ?? [],
       thumbnailUrl: g.thumbnailUrl,
       youtubeVideos: g.youtubeVideos ?? [],

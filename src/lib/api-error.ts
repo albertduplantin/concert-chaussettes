@@ -38,6 +38,10 @@ export class ApiError extends Error {
     return new ApiError(message, ApiErrorCode.VALIDATION_ERROR, 400, details);
   }
 
+  static badRequest(message: string, details?: Record<string, unknown>) {
+    return new ApiError(message, ApiErrorCode.VALIDATION_ERROR, 400, details);
+  }
+
   static unauthorized(message = "Non autorisé") {
     return new ApiError(message, ApiErrorCode.UNAUTHORIZED, 401);
   }

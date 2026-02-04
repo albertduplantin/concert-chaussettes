@@ -197,9 +197,10 @@ export const concertSchema = z.object({
   status: z.enum(["BROUILLON", "PUBLIE"]).default("BROUILLON"),
 });
 
-// Schéma d'inscription à un concert renforcé
+// Schema d'inscription a un concert renforce
 export const inscriptionSchema = z.object({
   concertId: uuidSchema,
+  prenom: requiredTextSchema("Le prenom", 1, 50),
   nom: requiredTextSchema("Le nom", 1, 100),
   email: emailSchema,
   telephone: phoneSchema.optional(),
@@ -208,6 +209,20 @@ export const inscriptionSchema = z.object({
     .int("Nombre entier requis")
     .min(1, "Minimum 1 personne")
     .max(10, "Maximum 10 personnes"),
+});
+
+// Schema pour modifier une inscription
+export const updateInscriptionSchema = z.object({
+  prenom: requiredTextSchema("Le prenom", 1, 50).optional(),
+  nom: requiredTextSchema("Le nom", 1, 100).optional(),
+  telephone: phoneSchema.optional(),
+  nombrePersonnes: z
+    .number()
+    .int("Nombre entier requis")
+    .min(1, "Minimum 1 personne")
+    .max(10, "Maximum 10 personnes")
+    .optional(),
+  showInGuestList: z.boolean().optional(),
 });
 
 // Schéma de template de message renforcé

@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle, Sparkles, Users, Clock, PartyPopper } from "lucide-react";
+import { Sparkles, Users, Clock, PartyPopper, ExternalLink, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface InscriptionFormProps {
   concertId: string;
@@ -24,6 +25,8 @@ export function InscriptionForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [status, setStatus] = useState<string>("");
+  const [managementUrl, setManagementUrl] = useState<string>("");
+  const [copied, setCopied] = useState(false);
 
   const remainingSpots = maxInvites ? maxInvites - confirmedCount : null;
   const isAlmostFull = remainingSpots !== null && remainingSpots <= 10 && remainingSpots > 0;
@@ -40,6 +43,7 @@ export function InscriptionForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           concertId,
+          prenom: formData.get("prenom"),
           nom: formData.get("nom"),
           email: formData.get("email"),
           telephone: formData.get("telephone"),
@@ -56,6 +60,7 @@ export function InscriptionForm({
 
       setIsSubmitted(true);
       setStatus(data.inscription.status);
+      setManagementUrl(data.managementUrl);
       toast.success(
         data.inscription.status === "LISTE_ATTENTE"
           ? "Vous etes sur la liste d'attente !"
@@ -68,26 +73,69 @@ export function InscriptionForm({
     }
   }
 
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(managementUrl);
+      setCopied(true);
+      toast.success("Lien copie !");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Impossible de copier le lien");
+    }
+  }
+
   if (isSubmitted) {
     return (
-      <div className="text-center py-12 px-6">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center animate-bounce">
+      <div className="text-center py-8 px-4 space-y-6">
+        <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center animate-bounce">
           {status === "LISTE_ATTENTE" ? (
             <Clock className="h-10 w-10 text-white" />
           ) : (
             <PartyPopper className="h-10 w-10 text-white" />
           )}
         </div>
-        <h3 className="text-2xl font-bold mb-3">
-          {status === "LISTE_ATTENTE"
-            ? "Vous etes sur la liste d'attente !"
-            : "C'est confirme !"}
-        </h3>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          {status === "LISTE_ATTENTE"
-            ? "Nous vous prevenons des qu'une place se libere. Restez connecte !"
-            : "Vous allez recevoir un email avec tous les details. A tres bientot !"}
-        </p>
+        <div>
+          <h3 className="text-2xl font-bold mb-2">
+            {status === "LISTE_ATTENTE"
+              ? "Vous etes sur la liste d'attente !"
+              : "C'est confirme !"}
+          </h3>
+          <p className="text-white/70">
+            {status === "LISTE_ATTENTE"
+              ? "Nous vous prevenons des qu'une place se libere."
+              : "Vous allez recevoir un email avec tous les details."}
+          </p>
+        </div>
+
+        {/* Management link */}
+        <div className="bg-white/5 rounded-xl p-4 space-y-3">
+          <p className="text-sm text-white/60">
+            Conservez ce lien pour modifier ou annuler votre inscription :
+          </p>
+          <div className="flex gap-2">
+            <Button
+              asChild
+              variant="outline"
+              className="flex-1 border-white/20 hover:bg-white/10"
+            >
+              <Link href={managementUrl} target="_blank">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Gerer mon inscription
+              </Link>
+            </Button>
+            <Button
+              onClick={copyLink}
+              variant="outline"
+              className="border-white/20 hover:bg-white/10"
+            >
+              {copied ? (
+                <Check className="h-4 w-4 text-green-400" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -98,7 +146,7 @@ export function InscriptionForm({
       {isAlmostFull && (
         <div className="flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl animate-pulse">
           <Sparkles className="h-4 w-4 text-orange-500" />
-          <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+          <span className="text-sm font-medium text-orange-400">
             Plus que {remainingSpots} place{remainingSpots! > 1 ? "s" : ""} disponible{remainingSpots! > 1 ? "s" : ""} !
           </span>
         </div>
@@ -106,7 +154,7 @@ export function InscriptionForm({
 
       {/* Social proof */}
       {confirmedCount > 0 && (
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center gap-2 text-sm text-white/60">
           <Users className="h-4 w-4" />
           <span>{confirmedCount} personne{confirmedCount > 1 ? "s" : ""} inscrite{confirmedCount > 1 ? "s" : ""}</span>
         </div>
@@ -116,45 +164,59 @@ export function InscriptionForm({
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
+            <Label htmlFor="prenom" className="text-sm font-medium">
+              Prenom
+            </Label>
+            <Input
+              id="prenom"
+              name="prenom"
+              placeholder="Jean"
+              required
+              disabled={isLoading}
+              className="h-12 rounded-xl border-2 border-white/20 bg-white/5 focus:border-orange-500 transition-colors"
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="nom" className="text-sm font-medium">
-              Votre nom
+              Nom
             </Label>
             <Input
               id="nom"
               name="nom"
-              placeholder="Jean Dupont"
+              placeholder="Dupont"
               required
               disabled={isLoading}
-              className="h-12 rounded-xl border-2 focus:border-orange-500 transition-colors"
+              className="h-12 rounded-xl border-2 border-white/20 bg-white/5 focus:border-orange-500 transition-colors"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium">
-              Votre email
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="jean@email.com"
-              required
-              disabled={isLoading}
-              className="h-12 rounded-xl border-2 focus:border-orange-500 transition-colors"
-            />
-          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium">
+            Email
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="jean.dupont@email.com"
+            required
+            disabled={isLoading}
+            className="h-12 rounded-xl border-2 border-white/20 bg-white/5 focus:border-orange-500 transition-colors"
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="telephone" className="text-sm font-medium">
-              Telephone <span className="text-muted-foreground font-normal">(optionnel)</span>
+              Telephone <span className="text-white/40 font-normal">(optionnel)</span>
             </Label>
             <Input
               id="telephone"
               name="telephone"
               placeholder="06 12 34 56 78"
               disabled={isLoading}
-              className="h-12 rounded-xl border-2 focus:border-orange-500 transition-colors"
+              className="h-12 rounded-xl border-2 border-white/20 bg-white/5 focus:border-orange-500 transition-colors"
             />
           </div>
           <div className="space-y-2">
@@ -169,7 +231,7 @@ export function InscriptionForm({
               max={10}
               defaultValue={1}
               disabled={isLoading}
-              className="h-12 rounded-xl border-2 focus:border-orange-500 transition-colors"
+              className="h-12 rounded-xl border-2 border-white/20 bg-white/5 focus:border-orange-500 transition-colors"
             />
           </div>
         </div>
@@ -197,7 +259,7 @@ export function InscriptionForm({
           )}
         </Button>
 
-        <p className="text-xs text-center text-muted-foreground">
+        <p className="text-xs text-center text-white/40">
           En vous inscrivant, vous acceptez de recevoir les informations relatives a cet evenement.
         </p>
       </form>
