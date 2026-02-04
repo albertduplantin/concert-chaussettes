@@ -108,15 +108,14 @@ export function InscriptionForm({
         </div>
 
         {/* Management link */}
-        <div className="bg-white/5 rounded-xl p-4 space-y-3">
-          <p className="text-sm text-white/60">
+        <div className="bg-gray-800 rounded-xl p-4 space-y-3 border border-white/10">
+          <p className="text-sm text-white/70">
             Conservez ce lien pour modifier ou annuler votre inscription :
           </p>
           <div className="flex gap-2">
             <Button
               asChild
-              variant="outline"
-              className="flex-1 border-white/20 hover:bg-white/10"
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
             >
               <Link href={managementUrl} target="_blank">
                 <ExternalLink className="h-4 w-4 mr-2" />
@@ -125,8 +124,8 @@ export function InscriptionForm({
             </Button>
             <Button
               onClick={copyLink}
-              variant="outline"
-              className="border-white/20 hover:bg-white/10"
+              variant="secondary"
+              className="bg-gray-700 hover:bg-gray-600 text-white"
             >
               {copied ? (
                 <Check className="h-4 w-4 text-green-400" />

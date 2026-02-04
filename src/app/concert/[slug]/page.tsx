@@ -11,6 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ConcertPhotoGallery } from "./photo-gallery";
 import { GuestList } from "./guest-list";
+import { EmailLookup } from "./email-lookup";
 
 interface ConcertPageProps {
   params: Promise<{ slug: string }>;
@@ -289,12 +290,15 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
                     </p>
                   </div>
                 ) : (
-                  <InscriptionForm
-                    concertId={concert.id}
-                    isFull={isFull}
-                    maxInvites={concert.maxInvites}
-                    confirmedCount={confirmedCount}
-                  />
+                  <>
+                    <InscriptionForm
+                      concertId={concert.id}
+                      isFull={isFull}
+                      maxInvites={concert.maxInvites}
+                      confirmedCount={confirmedCount}
+                    />
+                    <EmailLookup concertId={concert.id} />
+                  </>
                 )}
               </div>
 
