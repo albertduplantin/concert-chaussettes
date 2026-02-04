@@ -14,15 +14,20 @@ export function CopyLinkButton({ url }: { url: string }) {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handleCopy}>
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={handleCopy}
+      className="gap-1.5 bg-white/20 hover:bg-white/30 text-white border-0"
+    >
       {copied ? (
         <>
-          <Check className="h-3 w-3 mr-1" />
-          Copi&eacute; !
+          <Check className="h-4 w-4" />
+          Copie !
         </>
       ) : (
         <>
-          <Copy className="h-3 w-3 mr-1" />
+          <Copy className="h-4 w-4" />
           Copier le lien
         </>
       )}

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
-import { FloatingCTA } from "@/components/ui/floating-cta";
 import {
   Search,
   CalendarDays,
@@ -162,9 +161,6 @@ export default function OrganisateurLayout({
           </div>
         </main>
       </div>
-
-      {/* Floating CTA */}
-      <FloatingCTA />
     </div>
   );
 }
