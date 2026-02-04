@@ -116,19 +116,23 @@ export function InvitationComposer({
         setIsLoadingContacts(true);
         try {
           const res = await fetch("/api/organisateur/contacts");
+          const data = await res.json();
           if (res.ok) {
-            const data = await res.json();
             setContacts(data.contacts || []);
+          } else {
+            console.error("Erreur API contacts:", data);
+            setContacts([]);
           }
-        } catch {
-          console.error("Erreur chargement contacts");
+        } catch (err) {
+          console.error("Erreur chargement contacts:", err);
+          setContacts([]);
         } finally {
           setIsLoadingContacts(false);
         }
       }
       fetchContacts();
     }
-  }, [initialContacts]);
+  }, [initialContacts.length]);
 
   // Filter templates by channel
   const filteredTemplates = templates.filter((t) => t.type === activeChannel);
