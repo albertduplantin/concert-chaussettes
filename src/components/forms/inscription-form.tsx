@@ -54,7 +54,10 @@ export function InscriptionForm({
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Erreur lors de l'inscription");
+        const errorMessage = typeof data.error === "string"
+          ? data.error
+          : data.error?.message || "Erreur lors de l'inscription";
+        toast.error(errorMessage);
         return;
       }
 

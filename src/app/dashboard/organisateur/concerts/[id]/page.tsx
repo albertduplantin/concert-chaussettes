@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { organisateurs, concerts, inscriptions } from "@/lib/db/schema";
+import { organisateurs, concerts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,22 +27,11 @@ import {
 } from "lucide-react";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { MessageGenerator } from "@/components/messages/message-generator";
+import { InscriptionActions, AddInscriptionButton } from "./inscription-actions";
 
 interface ConcertDetailPageProps {
   params: Promise<{ id: string }>;
 }
-
-const statusColors: Record<string, string> = {
-  CONFIRME: "bg-green-100 text-green-800",
-  LISTE_ATTENTE: "bg-yellow-100 text-yellow-800",
-  ANNULE: "bg-red-100 text-red-800",
-};
-
-const statusLabels: Record<string, string> = {
-  CONFIRME: "Confirmé",
-  LISTE_ATTENTE: "Liste d'attente",
-  ANNULE: "Annulé",
-};
 
 export default async function ConcertDetailPage({
   params,
@@ -80,6 +69,9 @@ export default async function ConcertDetailPage({
   const waitlistInscrits = concert.inscriptions.filter(
     (i) => i.status === "LISTE_ATTENTE"
   );
+  const cancelledInscrits = concert.inscriptions.filter(
+    (i) => i.status === "ANNULE"
+  );
   const confirmedCount = confirmedInscrits.reduce(
     (sum, i) => sum + i.nombrePersonnes,
     0
@@ -98,14 +90,14 @@ export default async function ConcertDetailPage({
         </Button>
       </div>
 
-      {/* En-tête */}
+      {/* En-tete */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold">{concert.titre}</h1>
           <div className="flex items-center gap-4 mt-2 text-muted-foreground">
             <span className="flex items-center gap-1">
               <CalendarDays className="h-4 w-4" />
-              {format(new Date(concert.date), "d MMMM yyyy 'à' HH:mm", {
+              {format(new Date(concert.date), "d MMMM yyyy 'a' HH:mm", {
                 locale: fr,
               })}
             </span>
@@ -143,13 +135,17 @@ export default async function ConcertDetailPage({
         </div>
       </div>
 
-      {/* Inscrits confirmés */}
+      {/* Inscrits confirmes */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            Inscrits confirm&eacute;s
+            Inscrits confirmes
             <Badge variant="secondary">{confirmedInscrits.length}</Badge>
+            <span className="text-sm font-normal text-muted-foreground">
+              ({confirmedCount} personnes)
+            </span>
           </CardTitle>
+          <AddInscriptionButton concertId={concert.id} />
         </CardHeader>
         <CardContent className="p-0">
           {confirmedInscrits.length > 0 ? (
@@ -158,26 +154,41 @@ export default async function ConcertDetailPage({
                 <TableRow>
                   <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>T&eacute;l&eacute;phone</TableHead>
-                  <TableHead>Personnes</TableHead>
-                  <TableHead>Date inscription</TableHead>
+                  <TableHead>Telephone</TableHead>
+                  <TableHead>Pers.</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {confirmedInscrits.map((inscription) => (
                   <TableRow key={inscription.id}>
                     <TableCell className="font-medium">
-                      {inscription.nom}
+                      {inscription.prenom} {inscription.nom}
                     </TableCell>
-                    <TableCell>{inscription.email}</TableCell>
-                    <TableCell>{inscription.telephone || "—"}</TableCell>
+                    <TableCell className="text-sm">{inscription.email}</TableCell>
+                    <TableCell className="text-sm">{inscription.telephone || "—"}</TableCell>
                     <TableCell>{inscription.nombrePersonnes}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {format(
                         new Date(inscription.createdAt),
-                        "d MMM yyyy",
+                        "d MMM",
                         { locale: fr }
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <InscriptionActions
+                        concertId={concert.id}
+                        inscription={{
+                          id: inscription.id,
+                          prenom: inscription.prenom,
+                          nom: inscription.nom,
+                          email: inscription.email,
+                          telephone: inscription.telephone,
+                          nombrePersonnes: inscription.nombrePersonnes,
+                          status: inscription.status,
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -206,19 +217,34 @@ export default async function ConcertDetailPage({
                 <TableRow>
                   <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>T&eacute;l&eacute;phone</TableHead>
-                  <TableHead>Personnes</TableHead>
+                  <TableHead>Telephone</TableHead>
+                  <TableHead>Pers.</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {waitlistInscrits.map((inscription) => (
                   <TableRow key={inscription.id}>
                     <TableCell className="font-medium">
-                      {inscription.nom}
+                      {inscription.prenom} {inscription.nom}
                     </TableCell>
-                    <TableCell>{inscription.email}</TableCell>
-                    <TableCell>{inscription.telephone || "—"}</TableCell>
+                    <TableCell className="text-sm">{inscription.email}</TableCell>
+                    <TableCell className="text-sm">{inscription.telephone || "—"}</TableCell>
                     <TableCell>{inscription.nombrePersonnes}</TableCell>
+                    <TableCell>
+                      <InscriptionActions
+                        concertId={concert.id}
+                        inscription={{
+                          id: inscription.id,
+                          prenom: inscription.prenom,
+                          nom: inscription.nom,
+                          email: inscription.email,
+                          telephone: inscription.telephone,
+                          nombrePersonnes: inscription.nombrePersonnes,
+                          status: inscription.status,
+                        }}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -227,7 +253,56 @@ export default async function ConcertDetailPage({
         </Card>
       )}
 
-      {/* Générateur de messages */}
+      {/* Inscrits annules */}
+      {cancelledInscrits.length > 0 && (
+        <Card className="opacity-60">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Annulations
+              <Badge variant="destructive">{cancelledInscrits.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Pers.</TableHead>
+                  <TableHead className="w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cancelledInscrits.map((inscription) => (
+                  <TableRow key={inscription.id} className="line-through text-muted-foreground">
+                    <TableCell>
+                      {inscription.prenom} {inscription.nom}
+                    </TableCell>
+                    <TableCell className="text-sm">{inscription.email}</TableCell>
+                    <TableCell>{inscription.nombrePersonnes}</TableCell>
+                    <TableCell>
+                      <InscriptionActions
+                        concertId={concert.id}
+                        inscription={{
+                          id: inscription.id,
+                          prenom: inscription.prenom,
+                          nom: inscription.nom,
+                          email: inscription.email,
+                          telephone: inscription.telephone,
+                          nombrePersonnes: inscription.nombrePersonnes,
+                          status: inscription.status,
+                        }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Generateur de messages */}
       {concert.status === "PUBLIE" && (
         <MessageGenerator
           concert={{
