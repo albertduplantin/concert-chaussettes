@@ -31,7 +31,7 @@ import {
   Copy,
 } from "lucide-react";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
-import { MessageGenerator } from "@/components/messages/message-generator";
+import { InvitationComposer } from "@/components/messages/invitation-composer";
 import { InscriptionActions, AddInscriptionButton } from "./inscription-actions";
 
 interface ConcertDetailPageProps {
@@ -438,23 +438,21 @@ export default async function ConcertDetailPage({
         </Card>
       )}
 
-      {/* Generateur de messages */}
+      {/* Envoi des invitations */}
       {concert.status === "PUBLIE" && (
-        <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm overflow-hidden">
-          <MessageGenerator
-            concert={{
-              id: concert.id,
-              titre: concert.titre,
-              description: concert.description,
-              date: concert.date.toISOString(),
-              adresseComplete: concert.adresseComplete,
-              adressePublique: concert.adressePublique,
-              ville: concert.ville,
-              slug: concert.slug,
-            }}
-            organisateurNom={organisateur.nom}
-          />
-        </Card>
+        <InvitationComposer
+          concert={{
+            id: concert.id,
+            titre: concert.titre,
+            description: concert.description,
+            date: concert.date.toISOString(),
+            adresseComplete: concert.adresseComplete,
+            adressePublique: concert.adressePublique,
+            ville: concert.ville,
+            slug: concert.slug,
+          }}
+          organisateurNom={organisateur.nom}
+        />
       )}
     </div>
   );
