@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle(sql, { schema });
 
-const defaultTemplates = [
+const updatedTemplates = [
   // --- EMAIL ---
   {
     nom: "Invitation concert",
@@ -31,7 +31,6 @@ Les places sont limitées, n'attendez pas trop !
 
 À très bientôt,
 {{nom_organisateur}}`,
-    isDefault: true,
   },
   {
     nom: "Rappel concert (J-3)",
@@ -49,7 +48,6 @@ Merci de confirmer votre présence en répondant à ce mail.
 
 À très bientôt !
 {{nom_organisateur}}`,
-    isDefault: true,
   },
   {
     nom: "Remerciement après concert",
@@ -65,9 +63,7 @@ Je vous tiendrai informé(e) des prochains événements.
 
 À bientôt !
 {{nom_organisateur}}`,
-    isDefault: true,
   },
-
   // --- SMS ---
   {
     nom: "Invitation concert (SMS)",
@@ -78,7 +74,6 @@ Je vous tiendrai informé(e) des prochains événements.
 📅 {{date_concert}}
 📍 {{ville_concert}}
 Inscription : {{lien_inscription}}`,
-    isDefault: true,
   },
   {
     nom: "Rappel concert (SMS)",
@@ -87,9 +82,7 @@ Inscription : {{lien_inscription}}`,
     contenu: `Rappel : {{titre_concert}} c'est {{date_concert}} à {{heure_concert}} !
 📍 {{adresse_complete}}
 À bientôt ! 🎶`,
-    isDefault: true,
   },
-
   // --- WHATSAPP ---
   {
     nom: "Invitation concert (WhatsApp)",
@@ -108,7 +101,6 @@ Je t'invite à un concert privé chez moi :
 Pour t'inscrire 👉 {{lien_inscription}}
 
 Dis-moi si tu peux venir ! 🎶`,
-    isDefault: true,
   },
   {
     nom: "Rappel concert (WhatsApp)",
@@ -122,7 +114,6 @@ Petit rappel pour le concert *{{titre_concert}}* !
 📍 {{adresse_complete}}
 
 Tu viens toujours ? Confirme-moi ! 😊`,
-    isDefault: true,
   },
   {
     nom: "Remerciement (WhatsApp)",
@@ -133,30 +124,33 @@ Tu viens toujours ? Confirme-moi ! 😊`,
 J'espère que tu as passé une bonne soirée. N'hésite pas à me faire tes retours !
 
 À très vite pour un prochain concert ! 🎤`,
-    isDefault: true,
   },
 ];
 
-async function seedTemplates() {
-  console.log("🌱 Seeding des templates par défaut...");
+async function updateTemplates() {
+  console.log("🔄 Mise à jour des templates par défaut...");
 
-  // Vérifier si les templates par défaut existent déjà
-  const existing = await db.query.messageTemplates.findFirst({
-    where: eq(schema.messageTemplates.isDefault, true),
-  });
+  for (const template of updatedTemplates) {
+    try {
+      await db
+        .update(schema.messageTemplates)
+        .set({
+          sujet: template.sujet,
+          contenu: template.contenu,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.messageTemplates.nom, template.nom));
 
-  if (existing) {
-    console.log("✅ Les templates par défaut existent déjà.");
-    return;
+      console.log(`✅ Template "${template.nom}" mis à jour`);
+    } catch (err) {
+      console.error(`❌ Erreur pour "${template.nom}":`, err);
+    }
   }
 
-  // Insérer les templates
-  await db.insert(schema.messageTemplates).values(defaultTemplates);
-
-  console.log(`✅ ${defaultTemplates.length} templates créés !`);
+  console.log("✅ Mise à jour terminée !");
 }
 
-seedTemplates()
+updateTemplates()
   .then(() => process.exit(0))
   .catch((err) => {
     console.error("❌ Erreur:", err);

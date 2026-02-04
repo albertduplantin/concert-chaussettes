@@ -182,7 +182,7 @@ export function InvitationComposer({
       "{{description_concert}}": concert.description || "",
       "{{lien_inscription}}": `${baseUrl}/concert/${concert.slug}`,
       "{{nom_organisateur}}": organisateurNom,
-      "{{prenom}}": recipientName || "[Prenom]",
+      "{{prenom}}": recipientName || "",
     };
 
     let message = template.contenu;
