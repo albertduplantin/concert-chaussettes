@@ -2,8 +2,8 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { organisateurs, concerts } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { organisateurs, concerts, contacts } from "@/lib/db/schema";
+import { eq, and, asc } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,22 +49,41 @@ export default async function ConcertDetailPage({
 
   const organisateur = await db.query.organisateurs.findFirst({
     where: eq(organisateurs.userId, session.user.id),
+    columns: { id: true, nom: true },
   });
 
   if (!organisateur) redirect("/");
 
-  const concert = await db.query.concerts.findFirst({
-    where: and(
-      eq(concerts.id, id),
-      eq(concerts.organisateurId, organisateur.id)
-    ),
-    with: {
-      groupe: true,
-      inscriptions: {
-        orderBy: (inscriptions, { asc }) => [asc(inscriptions.createdAt)],
+  const [concert, contactsList] = await Promise.all([
+    db.query.concerts.findFirst({
+      where: and(
+        eq(concerts.id, id),
+        eq(concerts.organisateurId, organisateur.id)
+      ),
+      with: {
+        groupe: {
+          columns: { nom: true },
+        },
+        inscriptions: {
+          columns: {
+            id: true, prenom: true, nom: true, email: true,
+            telephone: true, nombrePersonnes: true, status: true, createdAt: true,
+          },
+          orderBy: (inscriptions, { asc }) => [asc(inscriptions.createdAt)],
+        },
       },
-    },
-  });
+    }),
+    db.query.contacts.findMany({
+      where: eq(contacts.organisateurId, organisateur.id),
+      orderBy: [asc(contacts.nom)],
+      columns: {
+        id: true,
+        nom: true,
+        email: true,
+        telephone: true,
+      },
+    }),
+  ]);
 
   if (!concert) notFound();
 
@@ -452,6 +471,7 @@ export default async function ConcertDetailPage({
             slug: concert.slug,
           }}
           organisateurNom={organisateur.nom}
+          contacts={contactsList}
         />
       )}
     </div>

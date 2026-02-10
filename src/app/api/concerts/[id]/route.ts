@@ -48,10 +48,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       ),
       with: {
         groupe: {
+          columns: { id: true, nom: true, bio: true, ville: true, region: true },
           with: {
             groupeGenres: {
+              columns: { genreId: true },
               with: {
-                genre: true,
+                genre: { columns: { id: true, nom: true } },
               },
             },
           },

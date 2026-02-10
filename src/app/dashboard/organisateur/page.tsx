@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { organisateurs, subscriptions } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { organisateurs, subscriptions, contacts, messageTemplates } from "@/lib/db/schema";
+import { eq, desc, sql, count } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,36 +33,51 @@ export default async function OrganisateurDashboard() {
     redirect("/");
   }
 
-  // Get organisateur profile with relations
+  // Requêtes parallèles avec colonnes minimales
   const organisateur = await db.query.organisateurs.findFirst({
     where: eq(organisateurs.userId, session.user.id),
-    with: {
-      concerts: {
-        with: {
-          inscriptions: true,
-          groupe: true,
-        },
-        orderBy: (concerts, { desc }) => [desc(concerts.date)],
-      },
-      contacts: true,
-      messageTemplates: true,
-    },
+    columns: { id: true, nom: true, ville: true },
   });
 
   if (!organisateur) {
     redirect("/onboarding/role");
   }
 
-  // Get subscription
-  const subscription = await db.query.subscriptions.findFirst({
-    where: eq(subscriptions.userId, session.user.id),
-  });
+  // Charger concerts (colonnes minimales) + counts contacts/templates en parallèle
+  const [concertsData, subscription, contactsCount, templatesCount] = await Promise.all([
+    db.query.organisateurs.findFirst({
+      where: eq(organisateurs.id, organisateur.id),
+      columns: { id: true },
+      with: {
+        concerts: {
+          columns: { id: true, titre: true, date: true, status: true, ville: true, groupeId: true },
+          with: {
+            inscriptions: {
+              columns: { status: true, nombrePersonnes: true },
+            },
+            groupe: {
+              columns: { nom: true },
+            },
+          },
+          orderBy: (concerts, { desc }) => [desc(concerts.date)],
+        },
+      },
+    }),
+    db.query.subscriptions.findFirst({
+      where: eq(subscriptions.userId, session.user.id),
+      columns: { plan: true },
+    }),
+    db.select({ value: count() }).from(contacts).where(eq(contacts.organisateurId, organisateur.id)),
+    db.select({ value: count() }).from(messageTemplates).where(eq(messageTemplates.organisateurId, organisateur.id)),
+  ]);
 
   const isPremium = subscription?.plan === "PREMIUM";
+  const contactsTotal = contactsCount[0]?.value || 0;
+  const templatesTotal = templatesCount[0]?.value || 0;
 
   // Calculate stats
   const now = new Date();
-  const allConcerts = organisateur.concerts || [];
+  const allConcerts = concertsData?.concerts || [];
   const upcomingConcerts = allConcerts.filter(c => new Date(c.date) > now && c.status !== "ANNULE");
   const pastConcerts = allConcerts.filter(c => new Date(c.date) <= now);
   const publishedConcerts = allConcerts.filter(c => c.status === "PUBLIE");
@@ -80,8 +95,8 @@ export default async function OrganisateurDashboard() {
     { id: "name", completed: !!organisateur.nom, title: "Ajouter votre nom", href: "/dashboard/organisateur/profil" },
     { id: "location", completed: !!organisateur.ville, title: "Indiquer votre localisation", description: "Pour mieux cibler les groupes proches", href: "/dashboard/organisateur/profil", action: "Ajouter" },
     { id: "concert", completed: allConcerts.length > 0, title: "Créer votre premier concert", description: "Lancez-vous !", href: "/dashboard/organisateur/concerts/new", action: "Créer" },
-    { id: "contacts", completed: (organisateur.contacts?.length || 0) > 0, title: "Importer vos contacts", description: "Invitez vos proches facilement", href: "/dashboard/organisateur/contacts", action: "Importer" },
-    { id: "templates", completed: (organisateur.messageTemplates?.length || 0) > 0, title: "Créer un template de message", description: "Gagnez du temps sur vos invitations", href: "/dashboard/organisateur/messages", action: "Créer" },
+    { id: "contacts", completed: contactsTotal > 0, title: "Importer vos contacts", description: "Invitez vos proches facilement", href: "/dashboard/organisateur/contacts", action: "Importer" },
+    { id: "templates", completed: templatesTotal > 0, title: "Créer un template de message", description: "Gagnez du temps sur vos invitations", href: "/dashboard/organisateur/messages", action: "Créer" },
   ];
 
   const completedCount = profileChecks.filter((c) => c.completed).length;
@@ -179,7 +194,7 @@ export default async function OrganisateurDashboard() {
         />
         <StatsCard
           title="Contacts"
-          value={organisateur.contacts?.length || 0}
+          value={contactsTotal}
           icon={Mail}
           iconColor="text-purple-600"
           iconBg="bg-purple-100 dark:bg-purple-900/30"
@@ -310,7 +325,7 @@ export default async function OrganisateurDashboard() {
                 </div>
                 <div className="text-left">
                   <p className="font-medium">Gérer mes contacts</p>
-                  <p className="text-xs text-muted-foreground">{organisateur.contacts?.length || 0} contacts</p>
+                  <p className="text-xs text-muted-foreground">{contactsTotal} contacts</p>
                 </div>
               </Link>
             </Button>
@@ -322,7 +337,7 @@ export default async function OrganisateurDashboard() {
                 </div>
                 <div className="text-left">
                   <p className="font-medium">Templates messages</p>
-                  <p className="text-xs text-muted-foreground">{organisateur.messageTemplates?.length || 0} templates</p>
+                  <p className="text-xs text-muted-foreground">{templatesTotal} templates</p>
                 </div>
               </Link>
             </Button>
@@ -351,7 +366,7 @@ export default async function OrganisateurDashboard() {
               </div>
               <div className="p-4 rounded-lg bg-muted/50">
                 <p className="text-2xl font-bold text-blue-600">
-                  {pastConcerts.filter(c => c.groupe).length}
+                  {pastConcerts.filter(c => c.groupeId).length}
                 </p>
                 <p className="text-sm text-muted-foreground">avec des groupes</p>
               </div>

@@ -43,28 +43,32 @@ export default async function ConcertsPage() {
 
   const organisateur = await db.query.organisateurs.findFirst({
     where: eq(organisateurs.userId, session.user.id),
+    columns: { id: true },
   });
 
   if (!organisateur) redirect("/");
 
-  const subscription = await db.query.subscriptions.findFirst({
-    where: eq(subscriptions.userId, session.user.id),
-  });
-  const isPremium = subscription?.plan === "PREMIUM";
-
-  const allConcerts = await db.query.concerts.findMany({
-    where: eq(concerts.organisateurId, organisateur.id),
-    with: {
-      groupe: true,
-      inscriptions: true,
-    },
-    orderBy: [desc(concerts.date)],
-  });
+  const [subscription, allConcerts] = await Promise.all([
+    db.query.subscriptions.findFirst({
+      where: eq(subscriptions.userId, session.user.id),
+      columns: { plan: true },
+    }),
+    db.query.concerts.findMany({
+      where: eq(concerts.organisateurId, organisateur.id),
+      columns: { id: true, titre: true, slug: true, date: true, status: true, ville: true, maxInvites: true, groupeId: true },
+      with: {
+        groupe: { columns: { nom: true } },
+        inscriptions: { columns: { status: true, nombrePersonnes: true } },
+      },
+      orderBy: [desc(concerts.date)],
+    }),
+  ]);
 
   const currentYear = new Date().getFullYear();
   const concertsThisYear = allConcerts.filter(
     (c) => new Date(c.date).getFullYear() === currentYear
   );
+  const isPremium = subscription?.plan === "PREMIUM";
   const maxConcerts = isPremium ? Infinity : 3;
   const canCreate = concertsThisYear.length < maxConcerts;
 

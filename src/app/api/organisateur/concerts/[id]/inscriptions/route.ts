@@ -22,8 +22,14 @@ async function verifyOrganizerAccess(concertId: string) {
   const concert = await db.query.concerts.findFirst({
     where: eq(concerts.id, concertId),
     with: {
-      organisateur: true,
-      inscriptions: true,
+      organisateur: { columns: { userId: true } },
+      inscriptions: {
+        columns: {
+          id: true, prenom: true, nom: true, email: true,
+          telephone: true, nombrePersonnes: true, status: true,
+          showInGuestList: true, createdAt: true,
+        },
+      },
     },
   });
 

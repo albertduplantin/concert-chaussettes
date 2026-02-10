@@ -19,6 +19,7 @@ export async function GET() {
 
     const organisateur = await db.query.organisateurs.findFirst({
       where: eq(organisateurs.userId, session.user.id),
+      columns: { id: true },
     });
 
     if (!organisateur) {
@@ -27,18 +28,11 @@ export async function GET() {
 
     const contactsList = await db.query.contacts.findMany({
       where: eq(contacts.organisateurId, organisateur.id),
+      columns: { id: true, nom: true, email: true, telephone: true },
       orderBy: [asc(contacts.nom)],
     });
 
-    return NextResponse.json({
-      contacts: contactsList.map((c) => ({
-        id: c.id,
-        nom: c.nom,
-        email: c.email,
-        telephone: c.telephone,
-        tags: c.tags,
-      })),
-    });
+    return NextResponse.json({ contacts: contactsList });
   } catch (error) {
     return handleApiError(error, "contacts fetch");
   }

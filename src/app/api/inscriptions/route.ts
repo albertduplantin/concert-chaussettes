@@ -39,8 +39,7 @@ export async function POST(request: NextRequest) {
         eq(concerts.status, "PUBLIE")
       ),
       with: {
-        inscriptions: true,
-        organisateur: true,
+        inscriptions: { columns: { email: true, status: true, nombrePersonnes: true } },
       },
     });
 

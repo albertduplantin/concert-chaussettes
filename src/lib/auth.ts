@@ -3,8 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import { db } from "@/lib/db";
-import { users, accounts } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { users, accounts, groupes, organisateurs } from "@/lib/db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import type { Adapter, AdapterUser, AdapterAccount } from "next-auth/adapters";
 
 export interface SessionUser {
@@ -49,33 +49,21 @@ function createDrizzleAdapter(): Adapter {
     async getUser(id) {
       const user = await db.query.users.findFirst({
         where: eq(users.id, id),
+        columns: { id: true, email: true, emailVerified: true, name: true, image: true },
       });
 
       if (!user) return null;
-
-      return {
-        id: user.id,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        name: user.name,
-        image: user.image,
-      } as AdapterUser;
+      return user as AdapterUser;
     },
 
     async getUserByEmail(email) {
       const user = await db.query.users.findFirst({
         where: eq(users.email, email),
+        columns: { id: true, email: true, emailVerified: true, name: true, image: true },
       });
 
       if (!user) return null;
-
-      return {
-        id: user.id,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        name: user.name,
-        image: user.image,
-      } as AdapterUser;
+      return user as AdapterUser;
     },
 
     async getUserByAccount({ providerAccountId, provider }) {
@@ -84,23 +72,18 @@ function createDrizzleAdapter(): Adapter {
           eq(accounts.providerAccountId, providerAccountId),
           eq(accounts.provider, provider)
         ),
+        columns: { userId: true },
       });
 
       if (!account) return null;
 
       const user = await db.query.users.findFirst({
         where: eq(users.id, account.userId),
+        columns: { id: true, email: true, emailVerified: true, name: true, image: true },
       });
 
       if (!user) return null;
-
-      return {
-        id: user.id,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        name: user.name,
-        image: user.image,
-      } as AdapterUser;
+      return user as AdapterUser;
     },
 
     async updateUser(data) {
@@ -224,25 +207,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async signIn({ user, account }) {
-      // Pour les connexions OAuth, vérifier si l'utilisateur a besoin de choisir son rôle
-      if (account?.provider === "google" && user.email) {
-        const dbUser = await db.query.users.findFirst({
-          where: eq(users.email, user.email),
-          with: {
-            groupe: true,
-            organisateur: true,
-          },
-        });
-
-        // Si l'utilisateur existe mais n'a pas encore de profil (groupe ou organisateur)
-        // et qu'il a le rôle par défaut ORGANISATEUR sans mot de passe (OAuth)
-        if (dbUser && !dbUser.passwordHash && !dbUser.groupe && !dbUser.organisateur) {
-          // Marquer qu'il a besoin de l'onboarding
-          // On laisse passer et on redirigera côté client
-          return true;
-        }
-      }
+    async signIn() {
+      // Toujours autoriser la connexion, l'onboarding est géré dans le JWT
       return true;
     },
     async jwt({ token, user, account, trigger }) {
@@ -253,33 +219,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.image = user.image;
       }
 
-      // Pour OAuth, récupérer le rôle depuis la DB et vérifier l'onboarding
-      if (account?.provider === "google" && token.email) {
+      // Pour OAuth ou update, récupérer le rôle et vérifier l'onboarding avec une requête légère
+      if ((account?.provider === "google" || trigger === "update") && token.email) {
         const dbUser = await db.query.users.findFirst({
           where: eq(users.email, token.email as string),
+          columns: { id: true, role: true, passwordHash: true },
           with: {
-            groupe: true,
-            organisateur: true,
+            groupe: { columns: { id: true } },
+            organisateur: { columns: { id: true } },
           },
         });
         if (dbUser) {
           token.id = dbUser.id;
-          token.role = dbUser.role;
-          // Marquer si l'utilisateur a besoin de l'onboarding
-          token.needsOnboarding = !dbUser.passwordHash && !dbUser.groupe && !dbUser.organisateur;
-        }
-      }
-
-      // Mettre à jour le token après un update (comme après /api/user/role)
-      if (trigger === "update" && token.email) {
-        const dbUser = await db.query.users.findFirst({
-          where: eq(users.email, token.email as string),
-          with: {
-            groupe: true,
-            organisateur: true,
-          },
-        });
-        if (dbUser) {
           token.role = dbUser.role;
           token.needsOnboarding = !dbUser.passwordHash && !dbUser.groupe && !dbUser.organisateur;
         }
@@ -306,8 +257,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 });
 
 /**
- * Récupère la session côté serveur en utilisant auth() de NextAuth
- * Vérifie toujours la base de données pour needsOnboarding pour éviter les problèmes de cache JWT
+ * Récupère la session côté serveur en utilisant auth() de NextAuth.
+ * Utilise uniquement les données du JWT (pas de requête DB supplémentaire).
+ * Le JWT est mis à jour via le callback jwt lors du signIn et des updates.
  */
 export async function getSession(): Promise<Session | null> {
   const session = await auth();
@@ -315,30 +267,14 @@ export async function getSession(): Promise<Session | null> {
     return null;
   }
 
-  const userId = session.user.id as string;
-  const userEmail = session.user.email as string;
-
-  // Always check DB for needsOnboarding to avoid stale JWT issues
-  const dbUser = await db.query.users.findFirst({
-    where: eq(users.email, userEmail),
-    with: {
-      groupe: true,
-      organisateur: true,
-    },
-  });
-
-  const needsOnboarding = dbUser
-    ? !dbUser.passwordHash && !dbUser.groupe && !dbUser.organisateur
-    : false;
-
   return {
     user: {
-      id: userId,
-      email: userEmail,
-      role: dbUser?.role as "GROUPE" | "ORGANISATEUR" | "ADMIN" || "ORGANISATEUR",
+      id: session.user.id as string,
+      email: session.user.email as string,
+      role: (session.user as { role?: string }).role as "GROUPE" | "ORGANISATEUR" | "ADMIN" || "ORGANISATEUR",
       name: session.user.name,
       image: session.user.image,
-      needsOnboarding,
+      needsOnboarding: (session.user as { needsOnboarding?: boolean }).needsOnboarding || false,
     },
   };
 }

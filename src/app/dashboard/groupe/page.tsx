@@ -40,17 +40,24 @@ export default async function GroupeDashboard() {
 
   const groupe = await db.query.groupes.findFirst({
     where: eq(groupes.userId, session.user.id),
+    columns: {
+      id: true, nom: true, bio: true, ville: true, departement: true,
+      isVerified: true, isBoosted: true, boostExpiresAt: true, isVisible: true,
+      thumbnailUrl: true, photos: true, youtubeVideos: true, contactEmail: true,
+    },
     with: {
       groupeGenres: {
+        columns: { genreId: true },
         with: {
-          genre: true,
+          genre: { columns: { id: true, nom: true } },
         },
       },
       concerts: {
+        columns: { id: true, titre: true, date: true, ville: true, status: true },
         orderBy: [desc(concerts.date)],
         limit: 5,
         with: {
-          organisateur: true,
+          organisateur: { columns: { nom: true } },
         },
       },
     },

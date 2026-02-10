@@ -23,14 +23,19 @@ export default async function ContactsPage() {
 
   const organisateur = await db.query.organisateurs.findFirst({
     where: eq(organisateurs.userId, session.user.id),
+    columns: { id: true },
   });
 
   if (!organisateur) redirect("/");
 
   const allContacts = await db.query.contacts.findMany({
     where: eq(contacts.organisateurId, organisateur.id),
+    columns: {
+      id: true, nom: true, email: true, telephone: true,
+      tags: true, nombreParticipations: true, updatedAt: true,
+    },
     with: {
-      dernierConcert: true,
+      dernierConcert: { columns: { id: true, titre: true } },
     },
     orderBy: [desc(contacts.updatedAt)],
   });
