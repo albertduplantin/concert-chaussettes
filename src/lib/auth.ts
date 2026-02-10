@@ -258,12 +258,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
 /**
  * Récupère la session côté serveur en utilisant auth() de NextAuth.
- * Utilise uniquement les données du JWT (pas de requête DB supplémentaire).
- * Le JWT est mis à jour via le callback jwt lors du signIn et des updates.
+ * Vérifie que l'utilisateur existe toujours en DB (évite les boucles de redirect sur JWT stale).
+ * Requête minimale : SELECT id uniquement.
  */
 export async function getSession(): Promise<Session | null> {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.email) {
+    return null;
+  }
+
+  // Vérification légère : l'utilisateur existe-t-il encore en DB ?
+  const userRow = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.email, session.user.email as string))
+    .limit(1);
+
+  if (!userRow.length) {
     return null;
   }
 
