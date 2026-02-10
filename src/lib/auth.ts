@@ -278,11 +278,12 @@ export async function getSession(): Promise<Session | null> {
     return null;
   }
 
+  // Utiliser l'ID et le rôle de la DB (pas du JWT) pour éviter les IDs stale entre migrations
   return {
     user: {
-      id: session.user.id as string,
+      id: userRow[0].id,
       email: session.user.email as string,
-      role: (session.user as { role?: string }).role as "GROUPE" | "ORGANISATEUR" | "ADMIN" || "ORGANISATEUR",
+      role: userRow[0].role as "GROUPE" | "ORGANISATEUR" | "ADMIN",
       name: session.user.name,
       image: session.user.image,
       needsOnboarding: (session.user as { needsOnboarding?: boolean }).needsOnboarding || false,
