@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("Error updating role:", error);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error updating role:", msg, error);
+    return NextResponse.json({ error: "Erreur serveur", detail: msg }, { status: 500 });
   }
 }
