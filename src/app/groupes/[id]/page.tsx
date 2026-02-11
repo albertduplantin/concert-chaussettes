@@ -281,7 +281,7 @@ export default async function GroupePage({ params }: PageProps) {
                       href={`/dashboard/organisateur/concerts/new?groupeId=${groupe.id}`}
                     >
                       <CalendarPlus className="h-4 w-4" />
-                      Réserver ce groupe
+                      Organiser un concert avec ce groupe
                     </Link>
                   </Button>
                 </div>
