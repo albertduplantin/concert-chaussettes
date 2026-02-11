@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Users, Mail, Phone, UserPlus, Sparkles, Star } from "lucide-react";
+import { ContactsActions } from "@/components/contacts/contacts-actions";
 
 export default async function ContactsPage() {
   const session = await getSession();
@@ -65,6 +66,9 @@ export default async function ContactsPage() {
             Retrouvez toutes les personnes qui ont participé à vos concerts.
             Contactez-les facilement pour vos prochains événements.
           </p>
+          <div className="mt-4">
+            <ContactsActions contactsCount={totalContacts} />
+          </div>
         </div>
       </div>
 

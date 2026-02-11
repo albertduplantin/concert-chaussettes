@@ -10,6 +10,7 @@ import {
   pgEnum,
   real,
   primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -282,8 +283,27 @@ export const contacts = pgTable("contacts", {
   dernierConcertId: uuid("dernier_concert_id").references(() => concerts.id, {
     onDelete: "set null",
   }),
+  sourceType: varchar("source_type", { length: 30 }),
+  sourceLabel: varchar("source_label", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("contacts_organisateur_email_idx").on(t.organisateurId, t.email),
+]);
+
+// --- ContactShareToken ---
+export const contactShareTokens = pgTable("contact_share_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organisateurId: uuid("organisateur_id")
+    .notNull()
+    .references(() => organisateurs.id, { onDelete: "cascade" }),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  label: varchar("label", { length: 255 }),
+  expiresAt: timestamp("expires_at").notNull(),
+  maxUses: integer("max_uses").default(10),
+  usedCount: integer("used_count").notNull().default(0),
+  isRevoked: boolean("is_revoked").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // --- MessageTemplate ---
@@ -408,6 +428,7 @@ export const organisateursRelations = relations(
     concerts: many(concerts),
     contacts: many(contacts),
     messageTemplates: many(messageTemplates),
+    contactShareTokens: many(contactShareTokens),
   })
 );
 
@@ -455,5 +476,12 @@ export const reportsRelations = relations(reports, ({ one }) => ({
   reporter: one(users, {
     fields: [reports.reporterId],
     references: [users.id],
+  }),
+}));
+
+export const contactShareTokensRelations = relations(contactShareTokens, ({ one }) => ({
+  organisateur: one(organisateurs, {
+    fields: [contactShareTokens.organisateurId],
+    references: [organisateurs.id],
   }),
 }));
