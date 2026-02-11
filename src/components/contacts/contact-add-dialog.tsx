@@ -17,19 +17,21 @@ interface Props {
 export function ContactAddDialog({ open, onOpenChange }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ email: "", nom: "", telephone: "" });
-  const [errors, setErrors] = useState<{ email?: string }>({});
+  const [form, setForm] = useState({ email: "", prenom: "", nom: "", telephone: "" });
+  const [errors, setErrors] = useState<{ email?: string; prenom?: string }>({});
 
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (field === "email") setErrors({});
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const validate = () => {
+    const errs: { email?: string; prenom?: string } = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!form.email.trim()) return { email: "L'email est requis" };
-    if (!emailRegex.test(form.email.trim())) return { email: "Email invalide" };
-    return {};
+    if (!form.email.trim()) errs.email = "L'email est requis";
+    else if (!emailRegex.test(form.email.trim())) errs.email = "Email invalide";
+    if (!form.prenom.trim()) errs.prenom = "Le prénom est requis";
+    return errs;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,6 +42,8 @@ export function ContactAddDialog({ open, onOpenChange }: Props) {
       return;
     }
 
+    const fullName = [form.prenom.trim(), form.nom.trim()].filter(Boolean).join(" ");
+
     setSaving(true);
     try {
       const res = await fetch("/api/organisateur/contacts/import", {
@@ -48,7 +52,7 @@ export function ContactAddDialog({ open, onOpenChange }: Props) {
         body: JSON.stringify({
           contacts: [{
             email: form.email.trim(),
-            nom: form.nom.trim() || undefined,
+            nom: fullName,
             telephone: form.telephone.trim() || undefined,
           }],
           source: "manuel",
@@ -64,7 +68,7 @@ export function ContactAddDialog({ open, onOpenChange }: Props) {
       } else {
         toast.success("Contact ajouté !");
       }
-      setForm({ email: "", nom: "", telephone: "" });
+      setForm({ email: "", prenom: "", nom: "", telephone: "" });
       onOpenChange(false);
       router.refresh();
     } catch (err) {
@@ -83,6 +87,33 @@ export function ContactAddDialog({ open, onOpenChange }: Props) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
+            <Label htmlFor="prenom">
+              Prénom <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="prenom"
+              type="text"
+              placeholder="Jean"
+              value={form.prenom}
+              onChange={(e) => handleChange("prenom", e.target.value)}
+              autoFocus
+              className={errors.prenom ? "border-red-400 focus-visible:ring-red-400" : ""}
+            />
+            {errors.prenom && <p className="text-xs text-red-500">{errors.prenom}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="nom">Nom de famille</Label>
+            <Input
+              id="nom"
+              type="text"
+              placeholder="Dupont"
+              value={form.nom}
+              onChange={(e) => handleChange("nom", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="email">
               Email <span className="text-red-500">*</span>
             </Label>
@@ -92,21 +123,9 @@ export function ContactAddDialog({ open, onOpenChange }: Props) {
               placeholder="jean@exemple.fr"
               value={form.email}
               onChange={(e) => handleChange("email", e.target.value)}
-              autoFocus
               className={errors.email ? "border-red-400 focus-visible:ring-red-400" : ""}
             />
             {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="nom">Nom</Label>
-            <Input
-              id="nom"
-              type="text"
-              placeholder="Jean Dupont"
-              value={form.nom}
-              onChange={(e) => handleChange("nom", e.target.value)}
-            />
           </div>
 
           <div className="space-y-1.5">
