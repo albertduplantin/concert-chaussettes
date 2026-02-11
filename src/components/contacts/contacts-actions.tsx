@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Download, Share2 } from "lucide-react";
+import { Upload, Download, Share2, UserPlus } from "lucide-react";
 import { ContactImportDialog } from "./contact-import-dialog";
 import { ContactShareDialog } from "./contact-share-dialog";
+import { ContactAddDialog } from "./contact-add-dialog";
 
 interface Props {
   contactsCount: number;
@@ -13,10 +14,20 @@ interface Props {
 export function ContactsActions({ contactsCount }: Props) {
   const [importOpen, setImportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   return (
     <>
       <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setAddOpen(true)}
+          className="gap-2 bg-white/20 border-white/40 text-white hover:bg-white/30 hover:text-white backdrop-blur-sm"
+        >
+          <UserPlus className="h-4 w-4" />
+          Ajouter
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -48,6 +59,7 @@ export function ContactsActions({ contactsCount }: Props) {
         </Button>
       </div>
 
+      <ContactAddDialog open={addOpen} onOpenChange={setAddOpen} />
       <ContactImportDialog open={importOpen} onOpenChange={setImportOpen} />
       <ContactShareDialog open={shareOpen} onOpenChange={setShareOpen} contactsCount={contactsCount} />
     </>
