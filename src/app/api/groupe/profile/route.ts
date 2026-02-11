@@ -41,6 +41,30 @@ export async function PUT(request: NextRequest) {
       return apiErrorResponse(ApiError.notFound("Groupe non trouvé"));
     }
 
+    // Géocoder la ville si renseignée
+    let latitude: number | null = groupe.latitude ?? null;
+    let longitude: number | null = groupe.longitude ?? null;
+    const villeChanged = (data.ville || null) !== (groupe.ville || null) || (data.codePostal || null) !== (groupe.codePostal || null);
+    if (villeChanged && (data.ville || data.codePostal)) {
+      try {
+        const q = [data.codePostal, data.ville].filter(Boolean).join(" ");
+        const geoRes = await fetch(
+          `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=1&type=municipality`,
+          { signal: AbortSignal.timeout(4000) }
+        );
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          const feature = geoData.features?.[0];
+          if (feature) {
+            longitude = feature.geometry.coordinates[0];
+            latitude = feature.geometry.coordinates[1];
+          }
+        }
+      } catch {
+        // Geocoding failed silently — coordinates stay unchanged
+      }
+    }
+
     // Mettre à jour le groupe avec données sanitizées
     await db
       .update(groupes)
@@ -51,6 +75,8 @@ export async function PUT(request: NextRequest) {
         codePostal: data.codePostal || null,
         departement: data.departement ? sanitizeText(data.departement) : null,
         region: data.region ? sanitizeText(data.region) : null,
+        latitude,
+        longitude,
         contactEmail: data.contactEmail ? sanitizeEmail(data.contactEmail) : null,
         contactTel: data.contactTel ? sanitizePhone(data.contactTel) : null,
         contactSite: data.contactSite ? sanitizeUrl(data.contactSite) : null,
