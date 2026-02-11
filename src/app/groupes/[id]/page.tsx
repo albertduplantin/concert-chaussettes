@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { groupes } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { groupes, avis, concerts } from "@/lib/db/schema";
+import { eq, and, avg, count, desc } from "drizzle-orm";
 import { Header } from "@/components/layout/header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,12 +70,27 @@ export default async function GroupePage({ params }: PageProps) {
     notFound();
   }
 
-  // Mock stats (would come from analytics in production)
-  const stats = {
-    rating: 4.8,
-    reviewsCount: 12,
-    concertsCount: 24,
-  };
+  // Real stats from DB
+  const [avisStats] = await db
+    .select({ avgNote: avg(avis.note), total: count(avis.id) })
+    .from(avis)
+    .where(and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true)));
+
+  const avisListe = await db.query.avis.findMany({
+    where: and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true)),
+    columns: { id: true, auteurNom: true, auteurType: true, note: true, commentaire: true, createdAt: true },
+    orderBy: [desc(avis.createdAt)],
+    limit: 10,
+  });
+
+  const [concertsStats] = await db
+    .select({ total: count(concerts.id) })
+    .from(concerts)
+    .where(and(eq(concerts.groupeId, groupe.id), eq(concerts.status, "PASSE")));
+
+  const avgNote = avisStats.avgNote ? parseFloat(Number(avisStats.avgNote).toFixed(1)) : null;
+  const avisCount = Number(avisStats.total);
+  const concertsCount = Number(concertsStats.total);
 
   const allPhotos = [
     ...(groupe.thumbnailUrl ? [groupe.thumbnailUrl] : []),
@@ -180,15 +195,19 @@ export default async function GroupePage({ params }: PageProps) {
             {/* Stats */}
             <div className="flex flex-wrap gap-6 py-4 border-y">
               <div className="flex items-center gap-2">
-                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold text-lg">{stats.rating}</span>
-                <span className="text-muted-foreground">
-                  ({stats.reviewsCount} avis)
-                </span>
+                <Star className={`h-5 w-5 ${avgNote ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"}`} />
+                {avgNote ? (
+                  <>
+                    <span className="font-semibold text-lg">{avgNote}</span>
+                    <span className="text-muted-foreground">({avisCount} avis)</span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground text-sm">Pas encore d&apos;avis</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Music2 className="h-5 w-5 text-orange-500" />
-                <span className="font-semibold text-lg">{stats.concertsCount}</span>
+                <span className="font-semibold text-lg">{concertsCount}</span>
                 <span className="text-muted-foreground">concerts</span>
               </div>
               {groupe.youtubeVideos && groupe.youtubeVideos.length > 0 && (
@@ -314,26 +333,59 @@ export default async function GroupePage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Reviews section placeholder */}
+      {/* Reviews section */}
       <div className="container max-w-6xl mx-auto px-4 py-8 border-t">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Avis</h2>
-          <div className="flex items-center gap-2">
-            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-            <span className="font-semibold">{stats.rating}</span>
-            <span className="text-muted-foreground">
-              ({stats.reviewsCount} avis)
-            </span>
-          </div>
+          {avgNote && (
+            <div className="flex items-center gap-2">
+              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+              <span className="font-semibold">{avgNote}</span>
+              <span className="text-muted-foreground">({avisCount} avis)</span>
+            </div>
+          )}
         </div>
-        <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-          <CardContent className="p-8 text-center">
-            <Star className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Les avis seront bientôt disponibles.
-            </p>
-          </CardContent>
-        </Card>
+        {avisListe.length === 0 ? (
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+            <CardContent className="p-8 text-center">
+              <Star className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Aucun avis pour l&apos;instant. Organisez un concert avec ce groupe pour laisser le premier !
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {avisListe.map((a) => (
+              <Card key={a.id} className="border-0 shadow-md bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-sm">{a.auteurNom || "Anonyme"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {a.auteurType === "ORGANISATEUR" ? "Organisateur" : "Invité"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(a.createdAt).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
+                        </span>
+                      </div>
+                      <div className="flex gap-0.5 mb-2">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className={`h-4 w-4 ${i < a.note ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                        ))}
+                      </div>
+                      {a.commentaire && (
+                        <p className="text-sm text-muted-foreground leading-relaxed">{a.commentaire}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

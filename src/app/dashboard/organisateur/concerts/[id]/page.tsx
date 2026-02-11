@@ -2,8 +2,9 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { organisateurs, concerts, contacts } from "@/lib/db/schema";
+import { organisateurs, concerts, contacts, avis } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { ConcertAvisSection } from "@/components/avis/concert-avis-section";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +87,14 @@ export default async function ConcertDetailPage({
   ]);
 
   if (!concert) notFound();
+
+  // Check if organisateur already left a review for this concert
+  const existingAvis = concert.status === "PASSE" && concert.groupeId
+    ? await db.query.avis.findFirst({
+        where: and(eq(avis.concertId, concert.id), eq(avis.auteurEmail, session.user.email)),
+        columns: { id: true },
+      })
+    : null;
 
   const confirmedInscrits = concert.inscriptions.filter(
     (i) => i.status === "CONFIRME"
@@ -455,6 +464,17 @@ export default async function ConcertDetailPage({
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {/* Section avis — visible si concert passé avec un groupe */}
+      {concert.status === "PASSE" && concert.groupeId && concert.groupe && (
+        <ConcertAvisSection
+          concertId={concert.id}
+          groupeId={concert.groupeId}
+          groupeNom={concert.groupe.nom}
+          alreadyReviewed={!!existingAvis}
+          appUrl={process.env.NEXTAUTH_URL || "https://concert-chaussettes.vercel.app"}
+        />
       )}
 
       {/* Envoi des invitations */}

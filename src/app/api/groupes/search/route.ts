@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { groupes, groupeGenres, genres } from "@/lib/db/schema";
-import { eq, and, ilike, inArray, desc, asc } from "drizzle-orm";
+import { groupes, groupeGenres, genres, avis } from "@/lib/db/schema";
+import { eq, and, ilike, inArray, desc, asc, avg, count } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,8 +48,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Récupérer les stats d'avis pour les groupes trouvés
+    const groupeIds = allGroupes.map((g) => g.id);
+    const avisStats =
+      groupeIds.length > 0
+        ? await db
+            .select({
+              groupeId: avis.groupeId,
+              avgNote: avg(avis.note),
+              total: count(avis.id),
+            })
+            .from(avis)
+            .where(and(inArray(avis.groupeId, groupeIds), eq(avis.isVisible, true)))
+            .groupBy(avis.groupeId)
+        : [];
+
+    const avisMap = new Map(avisStats.map((s) => [s.groupeId, s]));
+
     // Formater la réponse
-    const result = allGroupes.map((g) => ({
+    const result = allGroupes.map((g) => {
+      const stats = avisMap.get(g.id);
+      return ({
       id: g.id,
       nom: g.nom,
       bio: g.bio,
@@ -70,7 +89,10 @@ export async function GET(request: NextRequest) {
         id: gg.genre.id,
         nom: gg.genre.nom,
       })),
-    }));
+      avgNote: stats ? Number(stats.avgNote) : null,
+      avisCount: stats ? stats.total : 0,
+    });
+    });
 
     return NextResponse.json({ groupes: result });
   } catch {

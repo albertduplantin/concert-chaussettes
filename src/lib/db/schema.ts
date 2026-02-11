@@ -265,6 +265,9 @@ export const inscriptions = pgTable("inscriptions", {
   managementToken: varchar("management_token", { length: 64 }),
   // Visibilité dans la liste des invités
   showInGuestList: boolean("show_in_guest_list").notNull().default(true),
+  // Token pour laisser un avis post-concert
+  reviewToken: varchar("review_token", { length: 64 }).unique(),
+  reviewedAt: timestamp("reviewed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -343,6 +346,26 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// --- Avis (notes et commentaires sur les groupes) ---
+export const avis = pgTable("avis", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupeId: uuid("groupe_id")
+    .notNull()
+    .references(() => groupes.id, { onDelete: "cascade" }),
+  concertId: uuid("concert_id").references(() => concerts.id, {
+    onDelete: "set null",
+  }),
+  auteurType: varchar("auteur_type", { length: 20 }).notNull(), // 'ORGANISATEUR' | 'INVITE'
+  auteurEmail: varchar("auteur_email", { length: 255 }).notNull(),
+  auteurNom: varchar("auteur_nom", { length: 255 }),
+  note: integer("note").notNull(), // 1 à 5
+  commentaire: text("commentaire"),
+  isVisible: boolean("is_visible").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  uniqueIndex("avis_concert_auteur_idx").on(t.concertId, t.auteurEmail),
+]);
+
 // --- Audit Logs ---
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -401,6 +424,7 @@ export const groupesRelations = relations(groupes, ({ one, many }) => ({
   }),
   groupeGenres: many(groupeGenres),
   concerts: many(concerts),
+  avis: many(avis),
 }));
 
 export const groupeGenresRelations = relations(groupeGenres, ({ one }) => ({
@@ -442,6 +466,7 @@ export const concertsRelations = relations(concerts, ({ one, many }) => ({
     references: [groupes.id],
   }),
   inscriptions: many(inscriptions),
+  avis: many(avis),
 }));
 
 export const inscriptionsRelations = relations(inscriptions, ({ one }) => ({
@@ -483,5 +508,16 @@ export const contactShareTokensRelations = relations(contactShareTokens, ({ one 
   organisateur: one(organisateurs, {
     fields: [contactShareTokens.organisateurId],
     references: [organisateurs.id],
+  }),
+}));
+
+export const avisRelations = relations(avis, ({ one }) => ({
+  groupe: one(groupes, {
+    fields: [avis.groupeId],
+    references: [groupes.id],
+  }),
+  concert: one(concerts, {
+    fields: [avis.concertId],
+    references: [concerts.id],
   }),
 }));
