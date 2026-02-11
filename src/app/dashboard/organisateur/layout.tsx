@@ -117,11 +117,12 @@ export default function OrganisateurLayout({
                 Consultez notre guide pour organiser votre premier concert.
               </p>
               <Button
+                asChild
                 variant="outline"
                 size="sm"
                 className="w-full text-xs border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-900/30"
               >
-                Voir le guide
+                <Link href="/dashboard/organisateur/guide">Voir le guide</Link>
               </Button>
             </div>
           </div>
