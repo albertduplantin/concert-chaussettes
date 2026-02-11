@@ -21,7 +21,7 @@ export function ContactsActions({ contactsCount }: Props) {
           variant="outline"
           size="sm"
           onClick={() => setImportOpen(true)}
-          className="gap-2"
+          className="gap-2 bg-white/20 border-white/40 text-white hover:bg-white/30 hover:text-white backdrop-blur-sm"
         >
           <Upload className="h-4 w-4" />
           Importer
@@ -30,7 +30,7 @@ export function ContactsActions({ contactsCount }: Props) {
           variant="outline"
           size="sm"
           asChild
-          className="gap-2"
+          className="gap-2 bg-white/20 border-white/40 text-white hover:bg-white/30 hover:text-white backdrop-blur-sm"
         >
           <a href="/api/organisateur/contacts/export" download>
             <Download className="h-4 w-4" />
@@ -41,7 +41,7 @@ export function ContactsActions({ contactsCount }: Props) {
           variant="outline"
           size="sm"
           onClick={() => setShareOpen(true)}
-          className="gap-2"
+          className="gap-2 bg-white/20 border-white/40 text-white hover:bg-white/30 hover:text-white backdrop-blur-sm"
         >
           <Share2 className="h-4 w-4" />
           Partager
