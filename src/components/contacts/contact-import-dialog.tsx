@@ -43,6 +43,52 @@ function detectColumn(headers: string[], candidates: string[]): string | null {
   return null;
 }
 
+function detectEmailColumn(headers: string[]): string | null {
+  // Exact match first
+  const exact = headers.find((h) => ["email", "e-mail", "mail", "courriel"].includes(h.toLowerCase()));
+  if (exact) return exact;
+  // Google Contacts: "E-mail 1 - Value" (prefer "value" columns, skip "label" columns)
+  const valueCol = headers.find(
+    (h) => (h.toLowerCase().includes("e-mail") || h.toLowerCase().includes("email")) && h.toLowerCase().includes("value")
+  );
+  if (valueCol) return valueCol;
+  // Fallback: any email-looking column that is NOT a label
+  return headers.find(
+    (h) =>
+      (h.toLowerCase().includes("email") || h.toLowerCase().includes("e-mail") || h.toLowerCase().includes("mail")) &&
+      !h.toLowerCase().includes("label")
+  ) || null;
+}
+
+function detectPhoneColumn(headers: string[]): string | null {
+  // Google Contacts: "Phone 1 - Value" (skip label/type columns)
+  const valueCol = headers.find(
+    (h) =>
+      (h.toLowerCase().includes("phone") || h.toLowerCase().includes("tel") || h.toLowerCase().includes("mobile")) &&
+      h.toLowerCase().includes("value")
+  );
+  if (valueCol) return valueCol;
+  // Fallback: any phone-looking column that is NOT a label
+  return headers.find(
+    (h) =>
+      (h.toLowerCase().includes("tel") || h.toLowerCase().includes("phone") || h.toLowerCase().includes("mobile") || h.toLowerCase().includes("portable")) &&
+      !h.toLowerCase().includes("label") && !h.toLowerCase().includes("type")
+  ) || null;
+}
+
+function buildFullName(row: Record<string, string>, headers: string[]): string | undefined {
+  // Google Contacts: separate "First Name" and "Last Name" columns
+  const firstCol = headers.find((h) => h.toLowerCase() === "first name");
+  const lastCol = headers.find((h) => h.toLowerCase() === "last name");
+  if (firstCol || lastCol) {
+    const parts = [firstCol ? row[firstCol]?.trim() : "", lastCol ? row[lastCol]?.trim() : ""].filter(Boolean);
+    return parts.join(" ") || undefined;
+  }
+  // Generic: single name column
+  const nomCol = detectColumn(headers, ["nom", "name", "prenom", "prénom", "contact"]);
+  return nomCol ? (row[nomCol] || "").trim() || undefined : undefined;
+}
+
 export function ContactImportDialog({ open, onOpenChange }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -100,9 +146,8 @@ export function ContactImportDialog({ open, onOpenChange }: Props) {
       skipEmptyLines: true,
       complete: (results) => {
         const headers = results.meta.fields || [];
-        const emailCol = detectColumn(headers, ["email", "mail", "courriel", "e-mail"]);
-        const nomCol = detectColumn(headers, ["nom", "name", "prenom", "prénom", "first", "last", "contact"]);
-        const telCol = detectColumn(headers, ["tel", "phone", "mobile", "portable", "téléphone"]);
+        const emailCol = detectEmailColumn(headers);
+        const telCol = detectPhoneColumn(headers);
 
         if (!emailCol) {
           toast.error("Impossible de détecter la colonne email dans ce fichier.");
@@ -119,7 +164,7 @@ export function ContactImportDialog({ open, onOpenChange }: Props) {
           EMAIL_REGEX.lastIndex = 0;
           contacts.push({
             email,
-            nom: nomCol ? (row[nomCol] || "").trim() || undefined : undefined,
+            nom: buildFullName(row, headers),
             telephone: telCol ? (row[telCol] || "").trim() || undefined : undefined,
           });
           valid++;
