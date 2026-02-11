@@ -185,15 +185,19 @@ export function ContactImportDialog({ open, onOpenChange }: Props) {
     setSource("import_vcf");
 
     const text = await file.text();
-    // Basic vCard parser: extract FN and EMAIL fields
-    const vcards = text.split(/BEGIN:VCARD/i).slice(1);
+    // Unfold continuation lines (lines starting with space/tab are continuations per RFC 6350)
+    const unfolded = text.replace(/\r?\n[ \t]/g, "");
+    // Basic vCard parser: extract FN, EMAIL and TEL fields
+    // Handles Google Contacts format: "item1.EMAIL;TYPE=INTERNET:..." and "item2.TEL:..."
+    const vcards = unfolded.split(/BEGIN:VCARD/i).slice(1);
     const contacts: ParsedContact[] = [];
     let invalid = 0;
 
     for (const vcard of vcards) {
-      const emailMatch = vcard.match(/^EMAIL[^:]*:(.+)$/im);
+      // Match optional "itemN." prefix before EMAIL / TEL / FN
+      const emailMatch = vcard.match(/^(?:item\d+\.)?EMAIL[^:]*:(.+)$/im);
       const fnMatch = vcard.match(/^FN[^:]*:(.+)$/im);
-      const telMatch = vcard.match(/^TEL[^:]*:(.+)$/im);
+      const telMatch = vcard.match(/^(?:item\d+\.)?TEL[^:]*:(.+)$/im);
 
       const email = emailMatch?.[1]?.trim().toLowerCase();
       if (!email || !EMAIL_REGEX.test(email)) { invalid++; EMAIL_REGEX.lastIndex = 0; continue; }
