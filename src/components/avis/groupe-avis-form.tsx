@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,9 @@ interface Props {
 const STAR_LABELS = ["", "Décevant", "Passable", "Bien", "Très bien", "Excellent !"];
 
 export function GroupeAvisForm({ groupeId, groupeNom }: Props) {
+  const { data: session } = useSession();
+  const sessionEmail = session?.user?.email ?? "";
+
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -25,16 +29,18 @@ export function GroupeAvisForm({ groupeId, groupeNom }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
+  const effectiveEmail = sessionEmail || email.trim();
+
   const handleSubmit = async () => {
     if (note === 0) { toast.error("Veuillez choisir une note."); return; }
-    if (!email.trim()) { toast.error("Veuillez entrer votre email."); return; }
+    if (!effectiveEmail) { toast.error("Veuillez entrer votre email."); return; }
     setSubmitting(true);
     try {
       const res = await fetch(`/api/avis/groupe/${groupeId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email.trim(),
+          email: effectiveEmail,
           nom: nom.trim() || undefined,
           note,
           commentaire: commentaire.trim() || undefined,
@@ -113,7 +119,11 @@ export function GroupeAvisForm({ groupeId, groupeNom }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label htmlFor="avis-email">Email *</Label>
-          <Input id="avis-email" type="email" placeholder="votre@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          {sessionEmail ? (
+            <Input id="avis-email" type="email" value={sessionEmail} disabled className="bg-muted text-muted-foreground" />
+          ) : (
+            <Input id="avis-email" type="email" placeholder="votre@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          )}
         </div>
         <div className="space-y-1">
           <Label htmlFor="avis-nom">Nom (facultatif)</Label>
@@ -131,7 +141,7 @@ export function GroupeAvisForm({ groupeId, groupeNom }: Props) {
 
       <Button
         onClick={handleSubmit}
-        disabled={submitting || note === 0 || !email.trim()}
+        disabled={submitting || note === 0 || !effectiveEmail}
         className="w-full bg-orange-500 hover:bg-orange-600 gap-2"
       >
         {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Envoi...</> : "Envoyer mon avis"}
