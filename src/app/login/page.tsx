@@ -54,24 +54,17 @@ export default function LoginPage() {
     const password = formData.get("password") as string;
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        const dashboardPath =
-          data.user.role === "GROUPE"
-            ? "/dashboard/groupe"
-            : data.user.role === "ADMIN"
-              ? "/admin"
-              : "/dashboard/organisateur";
-        window.location.href = dashboardPath;
+      if (result?.error) {
+        toast.error("Email ou mot de passe incorrect");
       } else {
-        toast.error(data.error?.message || data.error || "Email ou mot de passe incorrect");
+        // Laisser /dashboard faire la redirection selon le rôle
+        window.location.href = "/dashboard";
       }
     } catch {
       toast.error("Erreur de connexion");
