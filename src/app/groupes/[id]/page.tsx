@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { groupes, avis, concerts } from "@/lib/db/schema";
 import { eq, and, avg, count, desc } from "drizzle-orm";
 import { Header } from "@/components/layout/header";
+import { GroupeAvisForm } from "@/components/avis/groupe-avis-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -345,12 +346,14 @@ export default async function GroupePage({ params }: PageProps) {
             </div>
           )}
         </div>
+        <GroupeAvisForm groupeId={groupe.id} groupeNom={groupe.nom} />
+
         {avisListe.length === 0 ? (
           <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
             <CardContent className="p-8 text-center">
               <Star className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
               <p className="text-muted-foreground">
-                Aucun avis pour l&apos;instant. Organisez un concert avec ce groupe pour laisser le premier !
+                Soyez le premier à laisser un avis sur ce groupe !
               </p>
             </CardContent>
           </Card>
