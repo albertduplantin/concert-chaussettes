@@ -21,12 +21,11 @@ import {
   Star,
   Music2,
   Youtube,
-  Share2,
-  Heart,
   Play,
 } from "lucide-react";
 import { GroupeGallery } from "@/components/groupes/groupe-gallery";
 import { GroupeVideoPlayer } from "@/components/groupes/groupe-video-player";
+import { GroupeActionButtons } from "@/components/groupes/groupe-action-buttons";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -170,14 +169,7 @@ export default async function GroupePage({ params }: PageProps) {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" className="rounded-full">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="rounded-full">
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                </div>
+                <GroupeActionButtons groupeId={groupe.id} groupeNom={groupe.nom} />
               </div>
 
               {/* Location */}
