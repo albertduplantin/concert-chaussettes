@@ -48,7 +48,8 @@ export function RoleSelectionForm({ userName }: RoleSelectionFormProps) {
       if (selectedRole === "GROUPE") {
         window.location.href = "/dashboard/groupe";
       } else {
-        window.location.href = "/dashboard/organisateur";
+        // Wizard d'onboarding pour les nouveaux organisateurs
+        window.location.href = "/onboarding/organisateur";
       }
     } catch {
       toast.error("Une erreur est survenue");
