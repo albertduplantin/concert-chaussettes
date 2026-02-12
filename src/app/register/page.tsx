@@ -215,7 +215,7 @@ function RegisterWizard() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Erreur lors de l'inscription");
+        toast.error(data.error?.message || data.error || "Erreur lors de l'inscription");
         setIsLoading(false);
         return;
       }

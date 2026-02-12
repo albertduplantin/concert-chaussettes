@@ -35,7 +35,7 @@ export function RoleSelectionForm({ userName }: RoleSelectionFormProps) {
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Erreur lors de la mise à jour");
+        toast.error(data.error?.message || data.error || "Erreur lors de la mise à jour");
         return;
       }
 

@@ -53,7 +53,7 @@ function NewConcertForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Erreur lors de la création");
+        toast.error(data.error?.message || data.error || "Erreur lors de la création");
         return;
       }
 

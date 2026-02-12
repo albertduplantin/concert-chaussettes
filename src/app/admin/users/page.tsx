@@ -120,7 +120,7 @@ export default function AdminUsersPage() {
         fetchUsers();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Erreur lors de la modification");
+        toast.error(data.error?.message || data.error || "Erreur lors de la modification");
       }
     } catch {
       toast.error("Erreur lors de la modification");
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
         fetchUsers();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Erreur lors de la suppression");
+        toast.error(data.error?.message || data.error || "Erreur lors de la suppression");
       }
     } catch {
       toast.error("Erreur lors de la suppression");

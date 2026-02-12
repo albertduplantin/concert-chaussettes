@@ -109,7 +109,7 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Erreur lors de la mise à jour");
+        toast.error(data.error?.message || data.error || "Erreur lors de la mise à jour");
         return;
       }
 

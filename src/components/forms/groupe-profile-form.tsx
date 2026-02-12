@@ -141,7 +141,7 @@ export function GroupeProfileForm({
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Erreur lors de la sauvegarde");
+        toast.error(data.error?.message || data.error || "Erreur lors de la sauvegarde");
         return;
       }
 
