@@ -71,7 +71,7 @@ export default function LoginPage() {
               : "/dashboard/organisateur";
         window.location.href = dashboardPath;
       } else {
-        toast.error(data.error || "Email ou mot de passe incorrect");
+        toast.error(data.error?.message || data.error || "Email ou mot de passe incorrect");
       }
     } catch {
       toast.error("Erreur de connexion");
