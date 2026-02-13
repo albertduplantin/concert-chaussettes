@@ -252,7 +252,7 @@ function RegisterWizard() {
       }
 
       toast.success("Bienvenue sur Concert Chaussettes !");
-      window.location.href = isGroupeFlow ? "/dashboard/groupe" : "/dashboard/organisateur";
+      window.location.href = isGroupeFlow ? "/dashboard/groupe" : "/onboarding/organisateur";
     } catch {
       toast.error("Erreur lors de l'inscription");
     } finally {
