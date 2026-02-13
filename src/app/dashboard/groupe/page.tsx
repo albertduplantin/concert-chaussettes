@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { groupes, subscriptions, concerts } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { groupes, subscriptions, concerts, avis } from "@/lib/db/schema";
+import { eq, and, desc, avg, count } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,6 @@ import {
 import {
   Guitar,
   Sparkles,
-  Eye,
   CalendarDays,
   Star,
   TrendingUp,
@@ -90,13 +89,21 @@ export default async function GroupeDashboard() {
   const profileCompletion = Math.round((completedCount / profileChecks.length) * 100);
   const isProfileComplete = profileCompletion >= 80;
 
-  // Mock stats (would come from analytics in production)
+  // Real stats from DB
+  const [avisStats] = await db
+    .select({ avgNote: avg(avis.note), total: count(avis.id) })
+    .from(avis)
+    .where(and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true)));
+
+  const totalConcerts = await db
+    .select({ total: count(concerts.id) })
+    .from(concerts)
+    .where(eq(concerts.groupeId, groupe.id));
+
   const stats = {
-    views: 127,
-    viewsTrend: 23,
-    concerts: groupe.concerts?.length || 0,
-    rating: 4.8,
-    reviews: 12,
+    concerts: totalConcerts[0]?.total || 0,
+    rating: avisStats?.avgNote ? parseFloat(Number(avisStats.avgNote).toFixed(1)) : null,
+    reviews: Number(avisStats?.total) || 0,
   };
 
   // Upcoming concerts
@@ -156,13 +163,7 @@ export default async function GroupeDashboard() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard
-          title="Vues du profil"
-          value={stats.views}
-          icon={Eye}
-          trend={{ value: stats.viewsTrend, label: "vs mois dernier" }}
-        />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatsCard
           title="Concerts"
           value={stats.concerts}
@@ -172,11 +173,11 @@ export default async function GroupeDashboard() {
         />
         <StatsCard
           title="Note moyenne"
-          value={`${stats.rating}/5`}
+          value={stats.rating ? `${stats.rating}/5` : "—"}
           icon={Star}
           iconColor="text-yellow-600"
           iconBg="bg-yellow-100 dark:bg-yellow-900/30"
-          subtitle={`${stats.reviews} avis`}
+          subtitle={stats.reviews > 0 ? `${stats.reviews} avis` : "Pas encore d'avis"}
         />
         <StatsCard
           title="Profil"
