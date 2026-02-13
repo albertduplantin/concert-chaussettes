@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { organisateurs } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { organisateurs, genres } from "@/lib/db/schema";
+import { eq, asc } from "drizzle-orm";
 import { OnboardingOrganisateurWizard } from "./wizard";
 
 export default async function OnboardingOrganisateurPage() {
@@ -14,7 +14,7 @@ export default async function OnboardingOrganisateurPage() {
 
   const organisateur = await db.query.organisateurs.findFirst({
     where: eq(organisateurs.userId, session.user.id),
-    columns: { id: true, nom: true, ville: true, bio: true, thumbnailUrl: true },
+    columns: { id: true, nom: true, ville: true },
   });
 
   if (!organisateur) {
@@ -26,9 +26,17 @@ export default async function OnboardingOrganisateurPage() {
     redirect("/dashboard/organisateur");
   }
 
+  // Charger les genres pour l'étape "goûts musicaux"
+  const allGenres = await db
+    .select({ id: genres.id, nom: genres.nom })
+    .from(genres)
+    .where(eq(genres.isCustom, false))
+    .orderBy(asc(genres.nom));
+
   return (
     <OnboardingOrganisateurWizard
       defaultNom={organisateur.nom ?? ""}
+      genres={allGenres}
     />
   );
 }
