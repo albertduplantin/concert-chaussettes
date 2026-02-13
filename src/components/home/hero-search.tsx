@@ -51,7 +51,7 @@ export function HeroSearch() {
     if (region) params.set("region", region);
     if (genre) params.set("genre", genre);
 
-    router.push(`/dashboard/organisateur?${params.toString()}`);
+    router.push(`/groupes?${params.toString()}`);
   };
 
   return (

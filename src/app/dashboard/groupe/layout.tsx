@@ -8,8 +8,6 @@ import {
   LayoutDashboard,
   User,
   CalendarDays,
-  BarChart3,
-  Settings,
   ChevronRight,
   Guitar,
   Sparkles,
@@ -32,11 +30,6 @@ const sidebarLinks = [
     href: "/dashboard/groupe/concerts",
     label: "Mes concerts",
     icon: CalendarDays,
-  },
-  {
-    href: "/dashboard/groupe/stats",
-    label: "Statistiques",
-    icon: BarChart3,
   },
 ];
 
@@ -107,11 +100,14 @@ export default function GroupeLayout({
                 Passez Premium pour apparaître en tête des résultats.
               </p>
               <Button
+                asChild
                 variant="outline"
                 size="sm"
                 className="w-full text-xs border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-900/30"
               >
-                Découvrir Premium
+                <Link href="/dashboard/groupe/profil">
+                  Améliorer mon profil
+                </Link>
               </Button>
             </div>
           </div>

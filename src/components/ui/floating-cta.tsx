@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface FloatingCTAProps {
-  groupeId?: string;
+  groupeId: string;
   groupeName?: string;
 }
 
@@ -34,15 +34,16 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [nombreInvites, setNombreInvites] = useState("");
+  const [typeEvenement, setTypeEvenement] = useState("");
 
-  // Show button after scrolling down a bit
   useEffect(() => {
     const handleScroll = () => {
       setIsVisible(window.scrollY > 200);
     };
 
     window.addEventListener("scroll", handleScroll);
-    handleScroll(); // Check initial position
+    handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -51,18 +52,42 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const formData = new FormData(e.currentTarget);
 
-    setIsSubmitting(false);
-    setIsSuccess(true);
-    toast.success("Votre demande de devis a été envoyée !");
+    try {
+      const res = await fetch("/api/devis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupeId,
+          nom: formData.get("nom"),
+          email: formData.get("email"),
+          telephone: formData.get("telephone") || undefined,
+          dateSouhaitee: formData.get("dateSouhaitee"),
+          nombreInvites: nombreInvites || undefined,
+          lieu: formData.get("lieu"),
+          typeEvenement: typeEvenement || undefined,
+          message: formData.get("message") || undefined,
+        }),
+      });
 
-    // Reset after showing success
-    setTimeout(() => {
-      setIsOpen(false);
-      setIsSuccess(false);
-    }, 2000);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error?.message || "Erreur lors de l'envoi");
+      }
+
+      setIsSuccess(true);
+      toast.success("Votre demande de devis a été envoyée !");
+
+      setTimeout(() => {
+        setIsOpen(false);
+        setIsSuccess(false);
+      }, 2000);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur lors de l'envoi");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -114,9 +139,10 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Votre nom</Label>
+                <Label htmlFor="nom">Votre nom</Label>
                 <Input
-                  id="name"
+                  id="nom"
+                  name="nom"
                   placeholder="Jean Dupont"
                   required
                   disabled={isSubmitting}
@@ -126,6 +152,7 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="jean@exemple.com"
                   required
@@ -135,9 +162,10 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone (optionnel)</Label>
+              <Label htmlFor="telephone">Téléphone (optionnel)</Label>
               <Input
-                id="phone"
+                id="telephone"
+                name="telephone"
                 type="tel"
                 placeholder="06 12 34 56 78"
                 disabled={isSubmitting}
@@ -146,23 +174,24 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date" className="flex items-center gap-2">
+                <Label htmlFor="dateSouhaitee" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   Date souhaitée
                 </Label>
                 <Input
-                  id="date"
+                  id="dateSouhaitee"
+                  name="dateSouhaitee"
                   type="date"
                   required
                   disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="guests" className="flex items-center gap-2">
+                <Label className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  Nombre d'invités
+                  Nombre d&apos;invités
                 </Label>
-                <Select disabled={isSubmitting}>
+                <Select disabled={isSubmitting} value={nombreInvites} onValueChange={setNombreInvites}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
@@ -177,12 +206,13 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location" className="flex items-center gap-2">
+              <Label htmlFor="lieu" className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                Lieu de l'événement
+                Lieu de l&apos;événement
               </Label>
               <Input
-                id="location"
+                id="lieu"
+                name="lieu"
                 placeholder="Ville ou adresse"
                 required
                 disabled={isSubmitting}
@@ -190,17 +220,17 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="eventType">Type d'événement</Label>
-              <Select disabled={isSubmitting}>
+              <Label>Type d&apos;événement</Label>
+              <Select disabled={isSubmitting} value={typeEvenement} onValueChange={setTypeEvenement}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="private">Concert privé</SelectItem>
-                  <SelectItem value="birthday">Anniversaire</SelectItem>
-                  <SelectItem value="wedding">Mariage</SelectItem>
-                  <SelectItem value="corporate">Événement d'entreprise</SelectItem>
-                  <SelectItem value="other">Autre</SelectItem>
+                  <SelectItem value="concert-prive">Concert privé</SelectItem>
+                  <SelectItem value="anniversaire">Anniversaire</SelectItem>
+                  <SelectItem value="mariage">Mariage</SelectItem>
+                  <SelectItem value="entreprise">Événement d&apos;entreprise</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -209,6 +239,7 @@ export function FloatingCTA({ groupeId, groupeName }: FloatingCTAProps) {
               <Label htmlFor="message">Message (optionnel)</Label>
               <Textarea
                 id="message"
+                name="message"
                 placeholder="Décrivez votre événement, vos attentes, le style de musique souhaité..."
                 rows={3}
                 disabled={isSubmitting}

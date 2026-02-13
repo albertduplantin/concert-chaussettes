@@ -366,6 +366,24 @@ export const avis = pgTable("avis", {
   uniqueIndex("avis_concert_auteur_idx").on(t.concertId, t.auteurEmail),
 ]);
 
+// --- Demandes de devis ---
+export const demandesDevis = pgTable("demandes_devis", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupeId: uuid("groupe_id")
+    .notNull()
+    .references(() => groupes.id, { onDelete: "cascade" }),
+  nom: varchar("nom", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  telephone: varchar("telephone", { length: 20 }),
+  dateSouhaitee: timestamp("date_souhaitee").notNull(),
+  nombreInvites: varchar("nombre_invites", { length: 20 }),
+  lieu: varchar("lieu", { length: 255 }).notNull(),
+  typeEvenement: varchar("type_evenement", { length: 50 }),
+  message: text("message"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // --- Audit Logs ---
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -425,6 +443,7 @@ export const groupesRelations = relations(groupes, ({ one, many }) => ({
   groupeGenres: many(groupeGenres),
   concerts: many(concerts),
   avis: many(avis),
+  demandesDevis: many(demandesDevis),
 }));
 
 export const groupeGenresRelations = relations(groupeGenres, ({ one }) => ({
@@ -508,6 +527,13 @@ export const contactShareTokensRelations = relations(contactShareTokens, ({ one 
   organisateur: one(organisateurs, {
     fields: [contactShareTokens.organisateurId],
     references: [organisateurs.id],
+  }),
+}));
+
+export const demandesDevisRelations = relations(demandesDevis, ({ one }) => ({
+  groupe: one(groupes, {
+    fields: [demandesDevis.groupeId],
+    references: [groupes.id],
   }),
 }));
 

@@ -118,9 +118,9 @@ export default async function ConcertDetailPage({
 
   const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     BROUILLON: { label: "Brouillon", color: "text-gray-700", bg: "bg-gray-100 dark:bg-gray-800" },
-    PUBLIE: { label: "Publie", color: "text-green-700", bg: "bg-green-100 dark:bg-green-900/30" },
-    PASSE: { label: "Passe", color: "text-blue-700", bg: "bg-blue-100 dark:bg-blue-900/30" },
-    ANNULE: { label: "Annule", color: "text-red-700", bg: "bg-red-100 dark:bg-red-900/30" },
+    PUBLIE: { label: "Publié", color: "text-green-700", bg: "bg-green-100 dark:bg-green-900/30" },
+    PASSE: { label: "Passé", color: "text-blue-700", bg: "bg-blue-100 dark:bg-blue-900/30" },
+    ANNULE: { label: "Annulé", color: "text-red-700", bg: "bg-red-100 dark:bg-red-900/30" },
   };
 
   return (

@@ -83,9 +83,9 @@ export function FeaturedGroups() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {groups.map((group) => (
+            <Link key={group.id} href={`/groupes/${group.id}`}>
             <Card
-              key={group.id}
-              className="overflow-hidden group hover:shadow-lg transition-all duration-300"
+              className="overflow-hidden group hover:shadow-lg transition-all duration-300 cursor-pointer"
             >
               <div className="aspect-[4/3] relative bg-muted overflow-hidden">
                 {group.thumbnailUrl ? (
@@ -125,12 +125,13 @@ export function FeaturedGroups() {
                 )}
               </CardContent>
             </Card>
+            </Link>
           ))}
         </div>
 
         <div className="text-center mt-10">
           <Button asChild size="lg" variant="outline" className="gap-2">
-            <Link href="/dashboard/organisateur">
+            <Link href="/groupes">
               Voir tous les groupes
               <ArrowRight className="h-4 w-4" />
             </Link>

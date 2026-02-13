@@ -26,6 +26,7 @@ import {
 import { GroupeGallery } from "@/components/groupes/groupe-gallery";
 import { GroupeVideoPlayer } from "@/components/groupes/groupe-video-player";
 import { GroupeActionButtons } from "@/components/groupes/groupe-action-buttons";
+import { FloatingCTA } from "@/components/ui/floating-cta";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -104,7 +105,7 @@ export default async function GroupePage({ params }: PageProps) {
       {/* Back navigation */}
       <div className="container max-w-6xl mx-auto px-4 py-4">
         <Button variant="ghost" asChild className="gap-2 -ml-2">
-          <Link href="/dashboard/organisateur">
+          <Link href="/groupes">
             <ArrowLeft className="h-4 w-4" />
             Retour aux résultats
           </Link>
@@ -382,6 +383,8 @@ export default async function GroupePage({ params }: PageProps) {
           </div>
         )}
       </div>
+
+      <FloatingCTA groupeId={groupe.id} groupeName={groupe.nom} />
     </div>
   );
 }
