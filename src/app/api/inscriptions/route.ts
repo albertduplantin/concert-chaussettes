@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { inscriptionSchema } from "@/lib/validation";
 import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
 import { sanitizeText, sanitizeEmail, sanitizePhone } from "@/lib/sanitize";
+import { notifyInscription } from "@/lib/email";
 import crypto from "crypto";
 
 // Generate a secure management token
@@ -40,6 +41,10 @@ export async function POST(request: NextRequest) {
       ),
       with: {
         inscriptions: { columns: { email: true, status: true, nombrePersonnes: true } },
+        organisateur: {
+          columns: { id: true },
+          with: { user: { columns: { email: true } } },
+        },
       },
     });
 
@@ -118,11 +123,20 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://concert-chaussettes.vercel.app";
     const managementUrl = `${baseUrl}/inscription/${inscription.id}?token=${managementToken}`;
 
-    // Log pour notification (en prod, envoyer un vrai email)
-    console.log(
-      `[NOTIFICATION] Nouvelle inscription: ${sanitizedNom} (${sanitizedEmail}) pour "${concert.titre}" - Status: ${inscription.status}`
-    );
-    console.log(`[MANAGEMENT URL] ${managementUrl}`);
+    // Email notifications (fire-and-forget)
+    notifyInscription({
+      guestNom: sanitizedNom,
+      guestPrenom: sanitizedPrenom,
+      guestEmail: sanitizedEmail,
+      nombrePersonnes: data.nombrePersonnes,
+      status: inscription.status as "CONFIRME" | "LISTE_ATTENTE",
+      managementUrl,
+      concertTitre: concert.titre,
+      concertDate: concert.date,
+      concertVille: concert.ville,
+      concertAdressePublique: concert.adressePublique,
+      organisateurEmail: concert.organisateur.user.email,
+    }).catch(() => {});
 
     // Return inscription without exposing token directly, but include management URL
     return NextResponse.json({

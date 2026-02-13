@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { demandesDevis, groupes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { ApiError, handleApiError } from "@/lib/api-error";
+import { notifyDevisReceived } from "@/lib/email";
 import { z } from "zod";
 
 const devisSchema = z.object({
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     // Verify group exists
     const groupe = await db.query.groupes.findFirst({
       where: eq(groupes.id, groupeId),
-      columns: { id: true },
+      columns: { id: true, contactEmail: true, nom: true },
     });
 
     if (!groupe) {
@@ -54,6 +55,22 @@ export async function POST(req: NextRequest) {
         message: message || null,
       })
       .returning({ id: demandesDevis.id });
+
+    // Email notification (fire-and-forget)
+    if (groupe.contactEmail) {
+      notifyDevisReceived({
+        groupeContactEmail: groupe.contactEmail,
+        groupeNom: groupe.nom,
+        requesterNom: nom,
+        requesterEmail: email,
+        requesterTelephone: telephone || null,
+        dateSouhaitee,
+        nombreInvites: nombreInvites || null,
+        lieu,
+        typeEvenement: typeEvenement || null,
+        message: message || null,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ id: demande.id }, { status: 201 });
   } catch (error) {

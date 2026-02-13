@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { avis, groupes } from "@/lib/db/schema";
 import { eq, and, desc, avg, count, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { notifyAvisReceived } from "@/lib/email";
 
 export async function GET(
   _request: NextRequest,
@@ -62,7 +63,7 @@ export async function POST(
 
   const groupe = await db.query.groupes.findFirst({
     where: and(eq(groupes.id, groupeId), eq(groupes.isVisible, true)),
-    columns: { id: true },
+    columns: { id: true, contactEmail: true, nom: true },
   });
   if (!groupe) {
     return NextResponse.json({ error: "Groupe introuvable" }, { status: 404 });
@@ -101,6 +102,19 @@ export async function POST(
     note,
     commentaire: commentaire || null,
   });
+
+  // Email notification (fire-and-forget)
+  if (groupe.contactEmail) {
+    notifyAvisReceived({
+      groupeContactEmail: groupe.contactEmail,
+      groupeNom: groupe.nom,
+      auteurNom: nom || null,
+      auteurType: "INVITE",
+      note,
+      commentaire: commentaire || null,
+      concertTitre: null,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ success: true });
 }

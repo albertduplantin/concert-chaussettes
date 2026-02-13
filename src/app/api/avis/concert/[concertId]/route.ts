@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { avis, concerts } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { notifyAvisReceived } from "@/lib/email";
 
 export async function GET(
   _request: NextRequest,
@@ -46,9 +47,9 @@ export async function POST(
 
   const concert = await db.query.concerts.findFirst({
     where: eq(concerts.id, concertId),
-    columns: { id: true, status: true, groupeId: true },
+    columns: { id: true, status: true, groupeId: true, titre: true },
     with: {
-      groupe: { columns: { id: true, nom: true } },
+      groupe: { columns: { id: true, nom: true, contactEmail: true } },
     },
   });
 
@@ -82,6 +83,19 @@ export async function POST(
     note,
     commentaire: commentaire || null,
   });
+
+  // Email notification (fire-and-forget)
+  if (concert.groupe.contactEmail) {
+    notifyAvisReceived({
+      groupeContactEmail: concert.groupe.contactEmail,
+      groupeNom: concert.groupe.nom,
+      auteurNom: nom || null,
+      auteurType: "INVITE",
+      note,
+      commentaire: commentaire || null,
+      concertTitre: concert.titre,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ success: true });
 }

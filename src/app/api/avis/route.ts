@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { avis, concerts, organisateurs, groupes } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { notifyAvisReceived } from "@/lib/email";
 
 const schema = z.object({
   groupeId: z.string().uuid(),
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       eq(concerts.id, concertId),
       eq(concerts.organisateurId, organisateur.id)
     ),
-    columns: { id: true, status: true, groupeId: true },
+    columns: { id: true, status: true, groupeId: true, titre: true },
   });
   if (!concert) {
     return NextResponse.json({ error: "Concert introuvable" }, { status: 404 });
@@ -70,6 +71,23 @@ export async function POST(request: NextRequest) {
     note,
     commentaire: commentaire || null,
   }).returning({ id: avis.id });
+
+  // Email notification (fire-and-forget)
+  const groupe = await db.query.groupes.findFirst({
+    where: eq(groupes.id, groupeId),
+    columns: { contactEmail: true, nom: true },
+  });
+  if (groupe?.contactEmail) {
+    notifyAvisReceived({
+      groupeContactEmail: groupe.contactEmail,
+      groupeNom: groupe.nom,
+      auteurNom: organisateur.nom,
+      auteurType: "ORGANISATEUR",
+      note,
+      commentaire: commentaire || null,
+      concertTitre: concert.titre,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ id: created.id });
 }
