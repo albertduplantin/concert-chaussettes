@@ -220,17 +220,14 @@ function RegisterWizard() {
         return;
       }
 
-      // Step 2: Auto login
-      const loginRes = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      // Step 2: Auto login via NextAuth
+      const loginResult = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
       });
 
-      if (!loginRes.ok) {
+      if (loginResult?.error) {
         toast.success("Compte créé ! Connectez-vous.");
         router.push("/login");
         return;
