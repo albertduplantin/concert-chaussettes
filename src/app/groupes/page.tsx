@@ -1,3 +1,5 @@
+export const revalidate = 120;
+
 import { db } from "@/lib/db";
 import { genres } from "@/lib/db/schema";
 import Image from "next/image";
@@ -7,6 +9,7 @@ import { GroupesSearch } from "./groupes-search";
 export default async function GroupesPage() {
   // Fetch available genres for filtering
   const allGenres = await db.query.genres.findMany({
+    columns: { id: true, nom: true },
     orderBy: (genres, { asc }) => [asc(genres.nom)],
   });
 

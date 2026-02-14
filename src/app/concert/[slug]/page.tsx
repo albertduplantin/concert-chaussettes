@@ -12,9 +12,35 @@ import Link from "next/link";
 import { ConcertPhotoGallery } from "./photo-gallery";
 import { GuestList } from "./guest-list";
 import { EmailLookup } from "./email-lookup";
+import type { Metadata } from "next";
+
+export const revalidate = 30;
 
 interface ConcertPageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: ConcertPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const concert = await db.query.concerts.findFirst({
+    where: and(eq(concerts.slug, slug), eq(concerts.status, "PUBLIE")),
+    columns: { titre: true, description: true, date: true, adressePublique: true },
+    with: {
+      groupe: { columns: { thumbnailUrl: true } },
+    },
+  });
+
+  if (!concert) return { title: "Concert non trouvé" };
+
+  return {
+    title: `${concert.titre} | Concert Chaussettes`,
+    description: concert.description?.slice(0, 160) || `Concert privé — ${concert.titre}`,
+    openGraph: {
+      title: concert.titre,
+      description: concert.description?.slice(0, 160) || undefined,
+      images: concert.groupe?.thumbnailUrl ? [concert.groupe.thumbnailUrl] : [],
+    },
+  };
 }
 
 export default async function ConcertPublicPage({ params }: ConcertPageProps) {
@@ -24,16 +50,32 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
     where: and(eq(concerts.slug, slug), eq(concerts.status, "PUBLIE")),
     with: {
       groupe: {
+        columns: {
+          id: true,
+          nom: true,
+          ville: true,
+          photos: true,
+          thumbnailUrl: true,
+          youtubeVideos: true,
+          bio: true,
+        },
         with: {
           groupeGenres: {
             with: {
-              genre: true,
+              genre: { columns: { id: true, nom: true } },
             },
           },
         },
       },
-      organisateur: true,
-      inscriptions: true,
+      organisateur: { columns: { nom: true } },
+      inscriptions: {
+        columns: {
+          status: true,
+          nombrePersonnes: true,
+          showInGuestList: true,
+          prenom: true,
+        },
+      },
     },
   });
 
@@ -95,6 +137,7 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
               fill
               className="object-cover"
               priority
+              sizes="100vw"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-gray-900/30" />
           </>
@@ -109,7 +152,7 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
           {/* Status badges */}
           <div className="flex flex-wrap gap-2 mb-4">
             {isPast ? (
-              <Badge className="bg-gray-600 text-white border-0">Concert termine</Badge>
+              <Badge className="bg-gray-600 text-white border-0">Concert terminé</Badge>
             ) : isFull ? (
               <Badge className="bg-red-500 text-white border-0 animate-pulse">Complet</Badge>
             ) : remainingSpots && remainingSpots <= 20 ? (
@@ -161,7 +204,7 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
               <section>
                 <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                   <span className="w-8 h-1 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full" />
-                  A propos de l&apos;evenement
+                  À propos de l&apos;événement
                 </h2>
                 <p className="text-white/80 whitespace-pre-wrap leading-relaxed text-lg">
                   {concert.description}
@@ -186,6 +229,7 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
                         alt={concert.groupe.nom}
                         fill
                         className="object-cover"
+                        sizes="80px"
                       />
                     </div>
                   ) : (
@@ -235,7 +279,7 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
                   <div className="space-y-4">
                     <h4 className="font-medium text-white/90 flex items-center gap-2">
                       <Play className="h-4 w-4 text-red-500" />
-                      Videos
+                      Vidéos
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {youtubeVideos.slice(0, 2).map((videoId) => (
@@ -274,10 +318,10 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
               <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
                 <h2 className="text-xl font-semibold mb-6 text-center">
                   {isPast
-                    ? "Concert termine"
+                    ? "Concert terminé"
                     : isFull
                       ? "Liste d'attente"
-                      : "Reservez votre place"}
+                      : "Réservez votre place"}
                 </h2>
 
                 {isPast ? (
@@ -287,12 +331,12 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
                         <CalendarDays className="h-8 w-8 text-gray-400" />
                       </div>
                       <p className="text-white/60">
-                        Ce concert a deja eu lieu.
+                        Ce concert a déjà eu lieu.
                       </p>
                     </div>
                     <div className="border-t border-white/10 pt-6">
                       <p className="text-white/80 font-medium mb-3">
-                        Vous y etiez ?
+                        Vous y étiez ?
                       </p>
                       <Link
                         href={`/avis/concert/${concert.id}`}
@@ -325,7 +369,7 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
 
               {/* Trust indicators */}
               <div className="mt-6 text-center text-sm text-white/40">
-                <p>Evenement organise par</p>
+                <p>Événement organisé par</p>
                 <p className="font-medium text-white/60 mt-1">{concert.organisateur.nom}</p>
               </div>
             </div>
@@ -348,7 +392,7 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
               <span className="text-white/60 text-sm">Concert Chaussettes</span>
             </div>
             <p className="text-white/40 text-sm">
-              Concerts prives et intimes
+              Concerts privés et intimes
             </p>
           </div>
         </div>

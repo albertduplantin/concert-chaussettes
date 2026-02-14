@@ -70,8 +70,9 @@ export async function POST(request: NextRequest) {
       ? confirmedCount + data.nombrePersonnes > concert.maxInvites
       : false;
 
-    // Generate management token
+    // Generate tokens
     const managementToken = generateManagementToken();
+    const reviewToken = crypto.randomBytes(32).toString("hex");
 
     // Creer l'inscription avec donnees sanitizees
     const [inscription] = await db
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
         nombrePersonnes: data.nombrePersonnes,
         status: isFull ? "LISTE_ATTENTE" : "CONFIRME",
         managementToken,
+        reviewToken,
         showInGuestList: true,
       })
       .returning();

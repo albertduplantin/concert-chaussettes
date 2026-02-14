@@ -28,13 +28,31 @@ export async function GET(request: NextRequest) {
       conditions.push(ilike(groupes.region, `%${region}%`));
     }
 
-    // Requête de base
+    // Requête de base — colonnes restreintes pour réduire le payload
     let allGroupes = await db.query.groupes.findMany({
       where: and(...conditions),
+      columns: {
+        id: true,
+        nom: true,
+        bio: true,
+        ville: true,
+        departement: true,
+        region: true,
+        latitude: true,
+        longitude: true,
+        photos: true,
+        thumbnailUrl: true,
+        youtubeVideos: true,
+        contactEmail: true,
+        contactTel: true,
+        contactSite: true,
+        isVerified: true,
+        isBoosted: true,
+      },
       with: {
         groupeGenres: {
           with: {
-            genre: true,
+            genre: { columns: { id: true, nom: true } },
           },
         },
       },

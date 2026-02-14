@@ -28,6 +28,8 @@ import { GroupeVideoPlayer } from "@/components/groupes/groupe-video-player";
 import { GroupeActionButtons } from "@/components/groupes/groupe-action-buttons";
 import { FloatingCTA } from "@/components/ui/floating-cta";
 
+export const revalidate = 60;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -36,6 +38,7 @@ export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
   const groupe = await db.query.groupes.findFirst({
     where: eq(groupes.id, id),
+    columns: { nom: true, bio: true, thumbnailUrl: true },
   });
 
   if (!groupe) {
@@ -71,23 +74,25 @@ export default async function GroupePage({ params }: PageProps) {
     notFound();
   }
 
-  // Real stats from DB
-  const [avisStats] = await db
-    .select({ avgNote: avg(avis.note), total: count(avis.id) })
-    .from(avis)
-    .where(and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true)));
-
-  const avisListe = await db.query.avis.findMany({
-    where: and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true)),
-    columns: { id: true, auteurNom: true, auteurType: true, note: true, commentaire: true, createdAt: true },
-    orderBy: [desc(avis.createdAt)],
-    limit: 10,
-  });
-
-  const [concertsStats] = await db
-    .select({ total: count(concerts.id) })
-    .from(concerts)
-    .where(and(eq(concerts.groupeId, groupe.id), eq(concerts.status, "PASSE")));
+  // Parallel DB queries for stats
+  const [avisStatsResult, avisListe, concertsStatsResult] = await Promise.all([
+    db
+      .select({ avgNote: avg(avis.note), total: count(avis.id) })
+      .from(avis)
+      .where(and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true))),
+    db.query.avis.findMany({
+      where: and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true)),
+      columns: { id: true, auteurNom: true, auteurType: true, note: true, commentaire: true, createdAt: true },
+      orderBy: [desc(avis.createdAt)],
+      limit: 10,
+    }),
+    db
+      .select({ total: count(concerts.id) })
+      .from(concerts)
+      .where(and(eq(concerts.groupeId, groupe.id), eq(concerts.status, "PASSE"))),
+  ]);
+  const avisStats = avisStatsResult[0];
+  const concertsStats = concertsStatsResult[0];
 
   const avgNote = avisStats.avgNote ? parseFloat(Number(avisStats.avgNote).toFixed(1)) : null;
   const avisCount = Number(avisStats.total);

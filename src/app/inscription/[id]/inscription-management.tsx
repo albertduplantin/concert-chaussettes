@@ -62,7 +62,7 @@ export function InscriptionManagement({
 
   const statusConfig = {
     CONFIRME: {
-      label: "Confirme",
+      label: "Confirmé",
       icon: CheckCircle,
       className: "bg-green-500/10 text-green-400 border-green-500/30",
     },
@@ -72,7 +72,7 @@ export function InscriptionManagement({
       className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
     },
     ANNULE: {
-      label: "Annule",
+      label: "Annulé",
       icon: XCircle,
       className: "bg-red-500/10 text-red-400 border-red-500/30",
     },
@@ -107,7 +107,7 @@ export function InscriptionManagement({
       });
 
       setIsEditing(false);
-      toast.success("Inscription modifiee avec succes");
+      toast.success("Inscription modifiée avec succès");
     } catch {
       toast.error("Erreur lors de la modification");
     } finally {
@@ -131,7 +131,7 @@ export function InscriptionManagement({
 
       setData({ ...data, status: "ANNULE" });
       setShowCancelConfirm(false);
-      toast.success("Inscription annulee");
+      toast.success("Inscription annulée");
     } catch {
       toast.error("Erreur lors de l'annulation");
     } finally {
@@ -152,16 +152,16 @@ export function InscriptionManagement({
             <>
               <XCircle className="h-6 w-6 text-red-400" />
               <div>
-                <p className="font-medium text-red-400">Inscription annulee</p>
-                <p className="text-sm text-white/60">Cette inscription a ete annulee.</p>
+                <p className="font-medium text-red-400">Inscription annulée</p>
+                <p className="text-sm text-white/60">Cette inscription a été annulée.</p>
               </div>
             </>
           ) : (
             <>
               <Clock className="h-6 w-6 text-gray-400" />
               <div>
-                <p className="font-medium text-gray-400">Concert termine</p>
-                <p className="text-sm text-white/60">Ce concert a deja eu lieu.</p>
+                <p className="font-medium text-gray-400">Concert terminé</p>
+                <p className="text-sm text-white/60">Ce concert a déjà eu lieu.</p>
               </div>
             </>
           )}
@@ -171,7 +171,7 @@ export function InscriptionManagement({
         <div className="bg-white/5 rounded-xl p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-white/60">Prenom</p>
+              <p className="text-sm text-white/60">Prénom</p>
               <p className="font-medium">{data.prenom || "-"}</p>
             </div>
             <div>
@@ -204,8 +204,8 @@ export function InscriptionManagement({
           <div>
             <p className="font-medium">{status.label}</p>
             <p className="text-sm opacity-80">
-              {data.status === "CONFIRME" && "Votre place est reservee"}
-              {data.status === "LISTE_ATTENTE" && "Vous serez prevenu si une place se libere"}
+              {data.status === "CONFIRME" && "Votre place est réservée"}
+              {data.status === "LISTE_ATTENTE" && "Vous serez prévenu si une place se libère"}
             </p>
           </div>
         </div>
@@ -220,7 +220,7 @@ export function InscriptionManagement({
         <div className="bg-white/5 rounded-xl p-6 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="prenom">Prenom</Label>
+              <Label htmlFor="prenom">Prénom</Label>
               <Input
                 id="prenom"
                 value={formData.prenom}
@@ -238,7 +238,7 @@ export function InscriptionManagement({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="telephone">Telephone</Label>
+              <Label htmlFor="telephone">Téléphone</Label>
               <Input
                 id="telephone"
                 value={formData.telephone}
@@ -270,9 +270,9 @@ export function InscriptionManagement({
                 <EyeOff className="h-5 w-5 text-white/60" />
               )}
               <div>
-                <p className="font-medium">Apparaitre dans la liste des invites</p>
+                <p className="font-medium">Apparaître dans la liste des invités</p>
                 <p className="text-sm text-white/60">
-                  Votre prenom sera visible par les autres invites
+                  Votre prénom sera visible par les autres invités
                 </p>
               </div>
             </div>
@@ -315,7 +315,7 @@ export function InscriptionManagement({
         <div className="bg-white/5 rounded-xl p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-white/60">Prenom</p>
+              <p className="text-sm text-white/60">Prénom</p>
               <p className="font-medium">{data.prenom || "-"}</p>
             </div>
             <div>
@@ -327,7 +327,7 @@ export function InscriptionManagement({
               <p className="font-medium">{data.email}</p>
             </div>
             <div>
-              <p className="text-sm text-white/60">Telephone</p>
+              <p className="text-sm text-white/60">Téléphone</p>
               <p className="font-medium">{data.telephone || "-"}</p>
             </div>
           </div>
@@ -336,12 +336,12 @@ export function InscriptionManagement({
             {data.showInGuestList ? (
               <>
                 <Eye className="h-4 w-4" />
-                <span>Visible dans la liste des invites</span>
+                <span>Visible dans la liste des invités</span>
               </>
             ) : (
               <>
                 <EyeOff className="h-4 w-4" />
-                <span>Non visible dans la liste des invites</span>
+                <span>Non visible dans la liste des invités</span>
               </>
             )}
           </div>
@@ -371,8 +371,8 @@ export function InscriptionManagement({
             <div>
               <p className="font-medium text-red-400">Confirmer l'annulation</p>
               <p className="text-sm text-white/70 mt-1">
-                Cette action est irreversible. Votre place sera liberee et pourra etre attribuee
-                a une autre personne.
+                Cette action est irréversible. Votre place sera libérée et pourra être attribuée
+                à une autre personne.
               </p>
             </div>
           </div>
