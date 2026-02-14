@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, MapPin, Music, Clock, Ticket, Play, ExternalLink } from "lucide-react";
+import { CalendarDays, MapPin, Music, Clock, Ticket, Play, ExternalLink, Star } from "lucide-react";
 import { InscriptionForm } from "@/components/forms/inscription-form";
 import Image from "next/image";
 import Link from "next/link";
@@ -281,13 +281,27 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
                 </h2>
 
                 {isPast ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-700 flex items-center justify-center">
-                      <CalendarDays className="h-8 w-8 text-gray-400" />
+                  <div className="text-center py-8 space-y-6">
+                    <div>
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-700 flex items-center justify-center">
+                        <CalendarDays className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <p className="text-white/60">
+                        Ce concert a deja eu lieu.
+                      </p>
                     </div>
-                    <p className="text-white/60">
-                      Ce concert a deja eu lieu.
-                    </p>
+                    <div className="border-t border-white/10 pt-6">
+                      <p className="text-white/80 font-medium mb-3">
+                        Vous y etiez ?
+                      </p>
+                      <Link
+                        href={`/avis/concert/${concert.id}`}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl transition-all"
+                      >
+                        <Star className="h-5 w-5" />
+                        Laisser un avis
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   <>

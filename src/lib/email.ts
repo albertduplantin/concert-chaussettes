@@ -1,9 +1,7 @@
-import { Resend } from "resend";
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-const FROM_EMAIL =
-  process.env.EMAIL_FROM || "Concert Chaussettes <onboarding@resend.dev>";
+const FROM_EMAIL = process.env.EMAIL_FROM || "concert-chaussettes@gmail.com";
+const FROM_NAME = process.env.EMAIL_FROM_NAME || "Concert Chaussettes";
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://concert-chaussettes.vercel.app";
 
@@ -14,21 +12,30 @@ async function sendEmail(
   subject: string,
   html: string
 ): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("[EMAIL] RESEND_API_KEY not set, skipping email to:", to);
+  if (!process.env.BREVO_API_KEY) {
+    console.warn("[EMAIL] BREVO_API_KEY not set, skipping email to:", to);
     return;
   }
 
   try {
-    const { error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to,
-      subject,
-      html,
+    const res = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "api-key": process.env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { name: FROM_NAME, email: FROM_EMAIL },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
     });
 
-    if (error) {
-      console.error("[EMAIL] Resend error:", error);
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("[EMAIL] Brevo error:", res.status, body);
     }
   } catch (err) {
     console.error("[EMAIL] Failed to send email:", err);
