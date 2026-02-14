@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Card, CardContent } from "@/components/ui/card";
 import { Search, MapPin, Music, Filter, X, List, Map as MapIcon, ChevronRight, Star, Navigation, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,8 +16,8 @@ import dynamic from "next/dynamic";
 const GroupesMap = dynamic(() => import("./groupes-map").then((mod) => mod.GroupesMap), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-white/5 rounded-xl flex items-center justify-center">
-      <div className="text-white/60">Chargement de la carte...</div>
+    <div className="w-full h-full bg-muted rounded-xl flex items-center justify-center">
+      <div className="text-muted-foreground">Chargement de la carte...</div>
     </div>
   ),
 });
@@ -156,7 +157,7 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
       {hasFilters && (
         <button
           onClick={clearFilters}
-          className="text-sm text-orange-400 hover:text-orange-300 flex items-center gap-1"
+          className="text-sm text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300 flex items-center gap-1"
         >
           <X className="h-4 w-4" />
           Effacer les filtres
@@ -165,41 +166,41 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
 
       {/* Location filters */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">Localisation</h3>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Localisation</h3>
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={ville}
             onChange={(e) => setVille(e.target.value)}
             placeholder="Ville..."
-            className="pl-9 h-9 bg-white/5 border-white/10 text-sm"
+            className="pl-9 h-9 text-sm"
           />
         </div>
         <Input
           value={departement}
           onChange={(e) => setDepartement(e.target.value)}
           placeholder="Département (ex: Côtes-d'Armor)"
-          className="h-9 bg-white/5 border-white/10 text-sm"
+          className="h-9 text-sm"
         />
         <Input
           value={region}
           onChange={(e) => setRegion(e.target.value)}
           placeholder="Région (ex: Bretagne)"
-          className="h-9 bg-white/5 border-white/10 text-sm"
+          className="h-9 text-sm"
         />
       </div>
 
       {/* Nearby */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">Près de moi</h3>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Près de moi</h3>
         <Button
           variant="outline"
           size="sm"
           onClick={handleGeolocate}
           disabled={geoLoading}
           className={cn(
-            "w-full border-white/10 hover:bg-white/10",
-            userLocation && "border-orange-500/50 text-orange-400"
+            "w-full",
+            userLocation && "border-orange-500 text-orange-600 dark:text-orange-400"
           )}
         >
           {geoLoading ? (
@@ -212,8 +213,8 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
         {userLocation && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-white/60">Rayon</span>
-              <span className="text-orange-400 font-medium">{radius} km</span>
+              <span className="text-muted-foreground">Rayon</span>
+              <span className="text-orange-600 dark:text-orange-400 font-medium">{radius} km</span>
             </div>
             <Slider
               value={[radius]}
@@ -232,7 +233,7 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
                     "text-xs px-1.5 py-0.5 rounded transition-colors",
                     radius === r
                       ? "bg-orange-500 text-white"
-                      : "text-white/50 hover:text-white/80"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {r}km
@@ -245,7 +246,7 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
 
       {/* Note minimale */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">Note minimale</h3>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Note minimale</h3>
         <div className="flex gap-1">
           {[0, 1, 2, 3, 4, 5].map((n) => (
             <button
@@ -253,17 +254,17 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
               onClick={() => setMinNote(n === minNote ? 0 : n)}
               className={cn(
                 "p-1 transition-transform hover:scale-110",
-                n === 0 && "text-xs text-white/50 hover:text-white self-center px-2"
+                n === 0 && "text-xs text-muted-foreground hover:text-foreground self-center px-2"
               )}
               aria-label={n === 0 ? "Toutes les notes" : `${n} étoile minimum`}
             >
               {n === 0 ? (
-                <span className={cn(minNote === 0 ? "text-orange-400" : "")}>Toutes</span>
+                <span className={cn(minNote === 0 ? "text-orange-600 dark:text-orange-400" : "")}>Toutes</span>
               ) : (
                 <Star
                   className={cn(
                     "h-5 w-5 transition-colors",
-                    n <= minNote ? "fill-yellow-400 text-yellow-400" : "text-gray-500"
+                    n <= minNote ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"
                   )}
                 />
               )}
@@ -274,7 +275,7 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
 
       {/* Genres musicaux */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-white/70 uppercase tracking-wide">Genres musicaux</h3>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Genres musicaux</h3>
         <div className="flex flex-wrap gap-1.5">
           {genres.map((genre) => (
             <button
@@ -284,7 +285,7 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
                 "px-2.5 py-1 rounded-full text-xs transition-colors",
                 selectedGenres.includes(genre.id)
                   ? "bg-orange-500 text-white"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
               )}
             >
               {genre.nom}
@@ -296,17 +297,17 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
   );
 
   return (
-    <main className="container mx-auto px-4 pb-12">
+    <main className="container mx-auto px-4 pb-12 flex-1">
       {/* Search bar — always visible */}
       <div className="max-w-4xl mx-auto mb-6 space-y-4">
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Rechercher un groupe..."
-              className="pl-12 h-14 bg-white/5 border-white/10 rounded-xl text-lg"
+              className="pl-12 h-14 rounded-xl text-lg"
             />
           </div>
           <Button
@@ -314,8 +315,8 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
             size="lg"
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
-              "h-14 px-4 border-white/10 hover:bg-white/10",
-              showFilters && "bg-white/10 border-orange-500/40"
+              "h-14 px-4",
+              showFilters && "bg-orange-50 dark:bg-orange-950/20 border-orange-500"
             )}
           >
             <Filter className="h-5 w-5 mr-2" />
@@ -331,26 +332,26 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
 
       {/* View toggle and count */}
       <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto">
-        <p className="text-white/60 text-sm">
+        <p className="text-muted-foreground text-sm">
           {isLoading ? (
             "Recherche en cours..."
           ) : (
             <>
               {filteredGroupes.length} groupe{filteredGroupes.length !== 1 ? "s" : ""}
               {groupesWithLocation.length > 0 && viewMode === "map" && (
-                <span className="ml-2 text-orange-400">
+                <span className="ml-2 text-orange-600 dark:text-orange-400">
                   ({groupesWithLocation.length} sur la carte)
                 </span>
               )}
             </>
           )}
         </p>
-        <div className="flex rounded-lg overflow-hidden border border-white/10">
+        <div className="flex rounded-lg overflow-hidden border">
           <button
             onClick={() => setViewMode("list")}
             className={cn(
               "px-4 py-2 flex items-center gap-2 transition-colors",
-              viewMode === "list" ? "bg-white/10" : "hover:bg-white/5"
+              viewMode === "list" ? "bg-orange-500 text-white" : "hover:bg-muted"
             )}
           >
             <List className="h-4 w-4" />
@@ -359,8 +360,8 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
           <button
             onClick={() => setViewMode("map")}
             className={cn(
-              "px-4 py-2 flex items-center gap-2 transition-colors border-l border-white/10",
-              viewMode === "map" ? "bg-white/10" : "hover:bg-white/5"
+              "px-4 py-2 flex items-center gap-2 transition-colors border-l",
+              viewMode === "map" ? "bg-orange-500 text-white" : "hover:bg-muted"
             )}
           >
             <MapIcon className="h-4 w-4" />
@@ -374,24 +375,28 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
         <div className="max-w-4xl mx-auto">
           {/* Filters panel */}
           {showFilters && (
-            <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
-              <FiltersPanel />
-            </div>
+            <Card className="mb-6 border-0 shadow-md bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <FiltersPanel />
+              </CardContent>
+            </Card>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-white/5 rounded-xl p-4 animate-pulse">
-                  <div className="w-full aspect-video bg-white/10 rounded-lg mb-4" />
-                  <div className="h-6 bg-white/10 rounded w-3/4 mb-2" />
-                  <div className="h-4 bg-white/10 rounded w-1/2" />
-                </div>
+                <Card key={i} className="overflow-hidden border-0 shadow-md animate-pulse">
+                  <div className="w-full aspect-video bg-muted" />
+                  <CardContent className="p-4">
+                    <div className="h-6 bg-muted rounded w-3/4 mb-2" />
+                    <div className="h-4 bg-muted rounded w-1/2" />
+                  </CardContent>
+                </Card>
               ))
             ) : filteredGroupes.length === 0 ? (
               <div className="col-span-full text-center py-12">
-                <Music className="h-12 w-12 mx-auto text-white/40 mb-4" />
-                <p className="text-white/60">Aucun groupe trouvé</p>
-                <p className="text-sm text-white/40 mt-1">Essayez avec d&apos;autres critères</p>
+                <Music className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+                <p className="text-muted-foreground">Aucun groupe trouvé</p>
+                <p className="text-sm text-muted-foreground/60 mt-1">Essayez avec d&apos;autres critères</p>
               </div>
             ) : (
               filteredGroupes.map((groupe) => <GroupeCard key={groupe.id} groupe={groupe} />)
@@ -403,9 +408,11 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
         <div className="flex gap-4" style={{ height: "calc(100vh - 280px)", minHeight: "500px" }}>
           {/* Filters sidebar */}
           {showFilters && (
-            <div className="w-72 flex-shrink-0 overflow-y-auto bg-white/5 rounded-xl border border-white/10 p-4">
-              <FiltersPanel />
-            </div>
+            <Card className="w-72 flex-shrink-0 overflow-y-auto border-0 shadow-md bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <FiltersPanel />
+              </CardContent>
+            </Card>
           )}
 
           {/* Map */}
@@ -428,7 +435,7 @@ function StarRating({ avgNote, avisCount }: { avgNote: number | null; avisCount:
     <div className="flex items-center gap-1 text-sm">
       <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
       <span className="font-medium">{avgNote.toFixed(1)}</span>
-      <span className="text-white/50 text-xs">({avisCount})</span>
+      <span className="text-muted-foreground text-xs">({avisCount})</span>
     </div>
   );
 }
@@ -440,8 +447,10 @@ function GroupeCard({ groupe, compact = false }: { groupe: Groupe; compact?: boo
     <Link
       href={`/groupes/${groupe.id}`}
       className={cn(
-        "group bg-white/5 rounded-xl overflow-hidden border border-white/10 hover:border-orange-500/50 transition-all hover:scale-[1.02]",
-        compact ? "flex items-center gap-3 p-3" : "block"
+        "group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1",
+        compact
+          ? "flex items-center gap-3 p-3 bg-white/80 dark:bg-gray-900/80 rounded-xl border"
+          : "block rounded-xl border-0 shadow-md bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm"
       )}
     >
       {/* Image */}
@@ -460,8 +469,8 @@ function GroupeCard({ groupe, compact = false }: { groupe: Groupe; compact?: boo
             sizes={compact ? "64px" : "(max-width: 768px) 100vw, 33vw"}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-orange-500/30 to-pink-500/30 flex items-center justify-center">
-            <Music className={cn("text-white/50", compact ? "h-6 w-6" : "h-12 w-12")} />
+          <div className="w-full h-full bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center">
+            <Music className={cn("text-muted-foreground/50", compact ? "h-6 w-6" : "h-12 w-12")} />
           </div>
         )}
         {groupe.isVerified && !compact && (
@@ -471,8 +480,13 @@ function GroupeCard({ groupe, compact = false }: { groupe: Groupe; compact?: boo
         )}
         {groupe.isBoosted && !compact && (
           <div className="absolute top-2 left-2">
-            <Badge className="bg-orange-500 text-white border-0 text-xs">Mise en avant</Badge>
+            <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0 text-xs">
+              Mise en avant
+            </Badge>
           </div>
+        )}
+        {!compact && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         )}
       </div>
 
@@ -484,7 +498,7 @@ function GroupeCard({ groupe, compact = false }: { groupe: Groupe; compact?: boo
         {groupe.ville && (
           <p
             className={cn(
-              "text-white/60 flex items-center gap-1 truncate",
+              "text-muted-foreground flex items-center gap-1 truncate",
               compact ? "text-xs" : "text-sm mb-2"
             )}
           >
@@ -497,12 +511,12 @@ function GroupeCard({ groupe, compact = false }: { groupe: Groupe; compact?: boo
         {!compact && groupe.genres.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {groupe.genres.slice(0, 3).map((genre) => (
-              <Badge key={genre.id} variant="outline" className="text-xs border-white/20 text-white/70">
+              <Badge key={genre.id} variant="secondary" className="text-xs">
                 {genre.nom}
               </Badge>
             ))}
             {groupe.genres.length > 3 && (
-              <Badge variant="outline" className="text-xs border-white/20 text-white/70">
+              <Badge variant="secondary" className="text-xs">
                 +{groupe.genres.length - 3}
               </Badge>
             )}
@@ -511,7 +525,7 @@ function GroupeCard({ groupe, compact = false }: { groupe: Groupe; compact?: boo
       </div>
 
       {compact && (
-        <ChevronRight className="h-4 w-4 text-white/40 group-hover:text-orange-400 transition-colors flex-shrink-0" />
+        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-orange-500 transition-colors flex-shrink-0" />
       )}
     </Link>
   );
