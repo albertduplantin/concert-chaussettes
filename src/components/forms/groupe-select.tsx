@@ -36,6 +36,27 @@ export function GroupeSelect({ value, onChange, initialGroupe }: GroupeSelectPro
   const [isLoading, setIsLoading] = useState(false);
   const [selectedGroupe, setSelectedGroupe] = useState<Groupe | null>(initialGroupe || null);
 
+  // Fetch group data when we have an ID but no group info (e.g. from URL param)
+  useEffect(() => {
+    if (value && !selectedGroupe && !initialGroupe) {
+      async function fetchGroupe() {
+        try {
+          const res = await fetch(`/api/groupes/search?q=`);
+          if (res.ok) {
+            const data = await res.json();
+            const found = data.groupes?.find((g: Groupe) => g.id === value);
+            if (found) {
+              setSelectedGroupe(found);
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+      fetchGroupe();
+    }
+  }, [value, selectedGroupe, initialGroupe]);
+
   useEffect(() => {
     if (initialGroupe) {
       setSelectedGroupe(initialGroupe);
