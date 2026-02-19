@@ -42,6 +42,21 @@ async function sendEmail(
   }
 }
 
+// ============ NOTIFICATION: EMAIL VERIFICATION ============
+
+export async function notifyEmailVerification(to: string, verifyUrl: string): Promise<void> {
+  const html = baseLayout(
+    "Confirmez votre adresse email",
+    `<p style="color:#3f3f46;font-size:14px;">Bienvenue sur Concert Chaussettes ! Confirmez votre adresse email en cliquant sur le bouton ci-dessous.</p>
+     <p style="color:#3f3f46;font-size:14px;">Ce lien expire dans <strong>24 heures</strong>.</p>
+     <div style="margin-top:24px;text-align:center;">
+       <a href="${escapeHtml(verifyUrl)}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#f97316,#f59e0b);color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">Confirmer mon email</a>
+     </div>
+     <p style="color:#71717a;font-size:12px;margin-top:24px;">Si vous n'avez pas créé de compte, ignorez cet email.</p>`
+  );
+  await sendEmail(to, "Confirmez votre adresse email - Concert Chaussettes", html);
+}
+
 // ============ NOTIFICATION 1: DEVIS RECEIVED ============
 
 interface DevisNotificationData {

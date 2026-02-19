@@ -16,6 +16,10 @@ const updateConcertSchema = z.object({
   showGroupe: z.boolean().optional(),
   maxInvites: z.number().nullable().optional(),
   status: z.enum(["BROUILLON", "PUBLIE", "ANNULE"]).optional(),
+  customBranding: z.object({
+    primaryColor: z.string().optional(),
+    logo: z.string().optional(),
+  }).nullable().optional(),
 });
 
 interface RouteParams {
@@ -154,6 +158,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         ...(data.showGroupe !== undefined && { showGroupe: data.showGroupe }),
         ...(data.maxInvites !== undefined && { maxInvites: data.maxInvites }),
         ...(data.status !== undefined && { status: data.status }),
+        ...(data.customBranding !== undefined && { customBranding: data.customBranding }),
         updatedAt: new Date(),
       })
       .where(eq(concerts.id, id))

@@ -40,6 +40,7 @@ interface Concert {
   status: "BROUILLON" | "PUBLIE" | "ANNULE";
   groupeId: string | null;
   groupe?: Groupe | null;
+  customBranding?: { primaryColor?: string; logo?: string } | null;
 }
 
 export default function EditConcertPage({ params }: EditConcertPageProps) {
@@ -51,6 +52,7 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
   const [concert, setConcert] = useState<Concert | null>(null);
   const [selectedGroupeId, setSelectedGroupeId] = useState<string | null>(null);
   const [initialGroupe, setInitialGroupe] = useState<Groupe | null>(null);
+  const [accentColor, setAccentColor] = useState("#f97316");
 
   useEffect(() => {
     async function fetchConcert() {
@@ -63,6 +65,9 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
           setSelectedGroupeId(data.concert.groupeId);
           if (data.concert.groupe) {
             setInitialGroupe(data.concert.groupe);
+          }
+          if (data.concert.customBranding?.primaryColor) {
+            setAccentColor(data.concert.customBranding.primaryColor);
           }
         } else {
           toast.error("Concert non trouvé");
@@ -97,6 +102,7 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
       showGroupe,
       groupeId: selectedGroupeId,
       status,
+      customBranding: { primaryColor: accentColor },
     };
 
     try {
@@ -309,6 +315,35 @@ export default function EditConcertPage({ params }: EditConcertPageProps) {
                 />
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Apparence</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="accentColor">Couleur d&apos;accent de la page concert</Label>
+              <div className="flex items-center gap-3">
+                <input
+                  id="accentColor"
+                  type="color"
+                  value={accentColor}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="h-10 w-16 rounded cursor-pointer border border-input"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Personnalise la couleur des boutons et badges sur la page publique du concert.
+                </span>
+              </div>
+              <div
+                className="mt-2 h-8 rounded-lg text-white text-xs flex items-center justify-center font-medium"
+                style={{ backgroundColor: accentColor }}
+              >
+                Aperçu de la couleur
+              </div>
+            </div>
           </CardContent>
         </Card>
 

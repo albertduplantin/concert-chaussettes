@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { groupes, subscriptions, concerts, avis } from "@/lib/db/schema";
-import { eq, and, desc, avg, count } from "drizzle-orm";
+import { groupes, subscriptions, concerts, avis, analytics } from "@/lib/db/schema";
+import { eq, and, desc, avg, count, gte } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
   CalendarDays,
   Star,
   TrendingUp,
+  Eye,
   User,
   Image as ImageIcon,
   Youtube,
@@ -100,10 +101,21 @@ export default async function GroupeDashboard() {
     .from(concerts)
     .where(eq(concerts.groupeId, groupe.id));
 
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const profileViews = await db
+    .select({ total: count(analytics.id) })
+    .from(analytics)
+    .where(and(
+      eq(analytics.type, "PROFILE_VIEW"),
+      eq(analytics.targetId, groupe.id),
+      gte(analytics.createdAt, thirtyDaysAgo)
+    ));
+
   const stats = {
     concerts: totalConcerts[0]?.total || 0,
     rating: avisStats?.avgNote ? parseFloat(Number(avisStats.avgNote).toFixed(1)) : null,
     reviews: Number(avisStats?.total) || 0,
+    views: profileViews[0]?.total || 0,
   };
 
   // Upcoming concerts
@@ -163,7 +175,15 @@ export default async function GroupeDashboard() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard
+          title="Vues du profil (30j)"
+          value={stats.views}
+          icon={Eye}
+          iconColor="text-purple-600"
+          iconBg="bg-purple-100 dark:bg-purple-900/30"
+          subtitle="Visiteurs uniques"
+        />
         <StatsCard
           title="Concerts"
           value={stats.concerts}

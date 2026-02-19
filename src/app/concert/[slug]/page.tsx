@@ -108,19 +108,24 @@ export default async function ConcertPublicPage({ params }: ConcertPageProps) {
   const heroImage = groupeThumbnail || (groupePhotos && groupePhotos[0]) || null;
   const youtubeVideos = (concert.groupe?.youtubeVideos as string[] | undefined) || [];
 
+  const branding = concert.customBranding as { logo?: string; primaryColor?: string; secondaryColor?: string } | null;
+  const accentColor = branding?.primaryColor || "#f97316"; // default orange-500
+  const brandingLogo = branding?.logo;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white">
+      {/* Inject branding CSS variable */}
+      <style>{`:root { --concert-accent: ${accentColor}; }`}</style>
+
       {/* Header with logo */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <Link href="/" className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <Image
-              src="/logo.png"
-              alt="Concert Chaussettes"
-              width={40}
-              height={40}
-              className="rounded-lg"
-            />
+            {brandingLogo ? (
+              <Image src={brandingLogo} alt="Logo" width={40} height={40} className="rounded-lg object-contain" />
+            ) : (
+              <Image src="/logo.png" alt="Concert Chaussettes" width={40} height={40} className="rounded-lg" />
+            )}
             <span className="font-bold text-lg hidden sm:inline">Concert Chaussettes</span>
           </Link>
         </div>

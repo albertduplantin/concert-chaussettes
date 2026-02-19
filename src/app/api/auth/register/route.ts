@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
-import { users, subscriptions, groupes, organisateurs } from "@/lib/db/schema";
+import { users, subscriptions, groupes, organisateurs, verificationTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { registerSchema } from "@/lib/validation";
 import { ApiError, handleApiError, apiErrorResponse } from "@/lib/api-error";
 import { sanitizeEmail, sanitizeText } from "@/lib/sanitize";
+import { notifyEmailVerification } from "@/lib/email";
+import crypto from "crypto";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -68,6 +70,17 @@ export async function POST(request: NextRequest) {
         nom: sanitizedNom,
       });
     }
+
+    // Send verification email (non-blocking)
+    const verifyToken = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    await db.insert(verificationTokens).values({
+      identifier: `verify:${sanitizedEmail}`,
+      token: verifyToken,
+      expires,
+    });
+    const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://concert-chaussettes.vercel.app"}/verify-email/${verifyToken}?email=${encodeURIComponent(sanitizedEmail)}`;
+    notifyEmailVerification(sanitizedEmail, verifyUrl).catch(() => {});
 
     return NextResponse.json(
       { message: "Compte créé avec succès" },

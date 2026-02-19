@@ -27,6 +27,8 @@ import { GroupeGallery } from "@/components/groupes/groupe-gallery";
 import { GroupeVideoPlayer } from "@/components/groupes/groupe-video-player";
 import { GroupeActionButtons } from "@/components/groupes/groupe-action-buttons";
 import { FloatingCTA } from "@/components/ui/floating-cta";
+import { TrackView } from "@/components/analytics/track-view";
+import { ReportButton } from "@/components/moderation/report-button";
 
 export const revalidate = 60;
 
@@ -106,6 +108,7 @@ export default async function GroupePage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50/50 via-amber-50/30 to-yellow-50/50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-950">
       <Header />
+      <TrackView type="PROFILE_VIEW" targetId={groupe.id} />
 
       {/* Back navigation */}
       <div className="container max-w-6xl mx-auto px-4 py-4">
@@ -387,6 +390,11 @@ export default async function GroupePage({ params }: PageProps) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Report link */}
+      <div className="container max-w-6xl mx-auto px-4 py-4 flex justify-end">
+        <ReportButton targetType="groupe" targetId={groupe.id} targetName={groupe.nom} />
       </div>
 
       <FloatingCTA groupeId={groupe.id} groupeName={groupe.nom} />

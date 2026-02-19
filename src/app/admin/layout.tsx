@@ -9,6 +9,7 @@ import {
   Music2,
   Settings,
   Shield,
+  Flag,
 } from "lucide-react";
 
 export default async function AdminLayout({
@@ -50,6 +51,12 @@ export default async function AdminLayout({
             <Link href="/admin/groupes">
               <Music2 className="h-4 w-4" />
               Groupes
+            </Link>
+          </Button>
+          <Button variant="ghost" className="justify-start gap-2" asChild>
+            <Link href="/admin/reports">
+              <Flag className="h-4 w-4" />
+              Signalements
             </Link>
           </Button>
           <Button variant="ghost" className="justify-start gap-2" asChild>
