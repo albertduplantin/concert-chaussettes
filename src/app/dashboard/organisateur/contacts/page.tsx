@@ -5,16 +5,9 @@ import { organisateurs, contacts } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Users, Mail, Phone, UserPlus, Sparkles, Star } from "lucide-react";
+import { Users, UserPlus, Sparkles, Star } from "lucide-react";
 import { ContactsActions } from "@/components/contacts/contacts-actions";
+import { ContactsTable } from "@/components/contacts/contacts-table";
 
 export default async function ContactsPage() {
   const session = await getSession();
@@ -115,87 +108,7 @@ export default async function ContactsPage() {
         </Card>
       </div>
 
-      {/* Contacts list */}
-      {allContacts.length === 0 ? (
-        <Card className="p-12 text-center border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-          <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 flex items-center justify-center mb-4">
-            <Users className="h-8 w-8 text-orange-500" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2">Aucun contact</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Votre carnet de contacts est vide. Les personnes qui s'inscriront à vos concerts apparaîtront ici automatiquement.
-          </p>
-        </Card>
-      ) : (
-        <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm overflow-hidden">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="font-semibold">Nom</TableHead>
-                  <TableHead className="font-semibold">Email</TableHead>
-                  <TableHead className="font-semibold">Téléphone</TableHead>
-                  <TableHead className="font-semibold text-center">Participations</TableHead>
-                  <TableHead className="font-semibold">Dernier concert</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allContacts.map((contact) => (
-                  <TableRow key={contact.id} className="hover:bg-muted/20">
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {contact.nom || "—"}
-                        {contact.nombreParticipations >= 3 && (
-                          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-0 text-xs">
-                            Fidèle
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <a
-                        href={`mailto:${contact.email}`}
-                        className="flex items-center gap-1.5 text-muted-foreground hover:text-orange-600 transition-colors"
-                      >
-                        <Mail className="h-3.5 w-3.5" />
-                        {contact.email}
-                      </a>
-                    </TableCell>
-                    <TableCell>
-                      {contact.telephone ? (
-                        <a
-                          href={`tel:${contact.telephone}`}
-                          className="flex items-center gap-1.5 text-muted-foreground hover:text-orange-600 transition-colors"
-                        >
-                          <Phone className="h-3.5 w-3.5" />
-                          {contact.telephone}
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          contact.nombreParticipations >= 2
-                            ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-0"
-                            : ""
-                        }
-                      >
-                        {contact.nombreParticipations}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {contact.dernierConcert?.titre || "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+      <ContactsTable contacts={allContacts} />
     </div>
   );
 }

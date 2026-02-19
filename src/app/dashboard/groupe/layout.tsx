@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Guitar,
   Sparkles,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,11 @@ const sidebarLinks = [
     href: "/dashboard/groupe/concerts",
     label: "Mes concerts",
     icon: CalendarDays,
+  },
+  {
+    href: "/dashboard/groupe/devis",
+    label: "Demandes de devis",
+    icon: FileText,
   },
 ];
 

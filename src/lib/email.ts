@@ -283,6 +283,21 @@ function buildInscriptionOrganizerEmailHtml(
   );
 }
 
+// ============ NOTIFICATION: RESET PASSWORD ============
+
+export async function notifyResetPassword(to: string, resetUrl: string): Promise<void> {
+  const html = baseLayout(
+    "Réinitialisation de votre mot de passe",
+    `<p style="color:#3f3f46;font-size:14px;">Vous avez demandé la réinitialisation de votre mot de passe Concert Chaussettes.</p>
+     <p style="color:#3f3f46;font-size:14px;">Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe. Ce lien expire dans <strong>1 heure</strong>.</p>
+     <div style="margin-top:24px;text-align:center;">
+       <a href="${escapeHtml(resetUrl)}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#f97316,#f59e0b);color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">Réinitialiser mon mot de passe</a>
+     </div>
+     <p style="color:#71717a;font-size:12px;margin-top:24px;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email. Votre mot de passe ne sera pas modifié.</p>`
+  );
+  await sendEmail(to, "Réinitialisation de votre mot de passe - Concert Chaussettes", html);
+}
+
 // --- Avis template ---
 
 function buildAvisEmailHtml(data: AvisNotificationData): string {
