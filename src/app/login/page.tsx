@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Card,
   CardContent,
@@ -139,10 +140,9 @@ export default function LoginPage() {
                   Mot de passe oublié ?
                 </Link>
               </div>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 placeholder="Votre mot de passe"
                 required
                 disabled={isLoading || isGoogleLoading}

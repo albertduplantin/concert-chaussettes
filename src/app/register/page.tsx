@@ -7,6 +7,7 @@ import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
@@ -458,9 +459,8 @@ function RegisterWizard() {
                   <Lock className="h-4 w-4 text-muted-foreground" />
                   Mot de passe
                 </Label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   placeholder="Minimum 8 caractères"
                   value={formData.password}
                   onChange={(e) => updateField("password", e.target.value)}
@@ -474,9 +474,8 @@ function RegisterWizard() {
                   <Lock className="h-4 w-4 text-muted-foreground" />
                   Confirmer le mot de passe
                 </Label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
                   placeholder="Confirmez votre mot de passe"
                   value={formData.confirmPassword}
                   onChange={(e) => updateField("confirmPassword", e.target.value)}

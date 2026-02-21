@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Lock, CheckCircle } from "lucide-react";
 
@@ -94,9 +95,8 @@ function ResetPasswordForm() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="password">Nouveau mot de passe</Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     placeholder="8 caractères minimum"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -106,9 +106,8 @@ function ResetPasswordForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm">Confirmer le mot de passe</Label>
-                  <Input
+                  <PasswordInput
                     id="confirm"
-                    type="password"
                     placeholder="Répétez le mot de passe"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
