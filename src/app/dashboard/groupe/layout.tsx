@@ -103,7 +103,7 @@ export default function GroupeLayout({
                 <span className="font-medium text-sm">Boostez votre profil</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Passez Premium pour apparaître en tête des résultats.
+                Apparaissez en tête des recherches pendant 30 jours pour 9€.
               </p>
               <Button
                 asChild
@@ -111,8 +111,8 @@ export default function GroupeLayout({
                 size="sm"
                 className="w-full text-xs border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-900/30"
               >
-                <Link href="/dashboard/groupe/profil">
-                  Améliorer mon profil
+                <Link href="/dashboard/groupe">
+                  Booster mon profil
                 </Link>
               </Button>
             </div>
