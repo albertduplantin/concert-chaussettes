@@ -93,7 +93,7 @@ export default async function OrganisateurDashboard() {
   // Profile completion
   const profileChecks = [
     { id: "name", completed: !!organisateur.nom, title: "Ajouter votre nom", href: "/dashboard/organisateur/profil" },
-    { id: "location", completed: !!organisateur.ville, title: "Indiquer votre localisation", description: "Pour mieux cibler les groupes proches", href: "/dashboard/organisateur/profil", action: "Ajouter" },
+    { id: "location", completed: !!organisateur.ville, title: "Compléter votre profil", description: "Pour mieux cibler les groupes proches", href: "/dashboard/organisateur/profil", action: "Compléter" },
     { id: "concert", completed: allConcerts.length > 0, title: "Créer votre premier concert", description: "Lancez-vous !", href: "/dashboard/organisateur/concerts/new", action: "Créer" },
     { id: "contacts", completed: contactsTotal > 0, title: "Importer vos contacts", description: "Invitez vos proches facilement", href: "/dashboard/organisateur/contacts", action: "Importer" },
     { id: "templates", completed: templatesTotal > 0, title: "Créer un template de message", description: "Gagnez du temps sur vos invitations", href: "/dashboard/organisateur/messages", action: "Créer" },
