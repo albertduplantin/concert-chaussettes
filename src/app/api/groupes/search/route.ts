@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { groupes, groupeGenres, genres, avis } from "@/lib/db/schema";
-import { eq, and, ilike, inArray, desc, asc, avg, count } from "drizzle-orm";
+import { eq, and, ilike, inArray, desc, asc, avg, count, sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
         contactSite: true,
         isVerified: true,
         isBoosted: true,
+        boostExpiresAt: true,
       },
       with: {
         groupeGenres: {
@@ -56,7 +57,11 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: [desc(groupes.isBoosted), asc(groupes.nom)],
+      // Boost actif uniquement si boostExpiresAt est dans le futur
+      orderBy: [
+        desc(sql`CASE WHEN ${groupes.isBoosted} = true AND ${groupes.boostExpiresAt} > NOW() THEN 1 ELSE 0 END`),
+        asc(groupes.nom),
+      ],
     });
 
     // Filtrer par genres si spécifiés
@@ -102,7 +107,7 @@ export async function GET(request: NextRequest) {
       contactTel: g.contactTel,
       contactSite: g.contactSite,
       isVerified: g.isVerified,
-      isBoosted: g.isBoosted,
+      isBoosted: g.isBoosted && !!g.boostExpiresAt && new Date(g.boostExpiresAt) > new Date(),
       genres: g.groupeGenres.map((gg) => ({
         id: gg.genre.id,
         nom: gg.genre.nom,

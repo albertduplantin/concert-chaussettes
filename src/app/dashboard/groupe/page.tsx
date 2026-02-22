@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { BoostCard } from "@/components/dashboard/boost-card";
+import { BoostSuccessBanner } from "@/components/dashboard/boost-success-banner";
 import {
   OnboardingChecklist,
   StatsCard,
@@ -32,7 +34,12 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-export default async function GroupeDashboard() {
+export default async function GroupeDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ boost?: string }>;
+}) {
+  const { boost } = await searchParams;
   const session = await getSession();
   if (!session || session.user.role !== "GROUPE") {
     redirect("/");
@@ -165,6 +172,15 @@ export default async function GroupeDashboard() {
           )}
         </div>
       </div>
+
+      {/* Boost success banner */}
+      {boost === "success" && <BoostSuccessBanner />}
+
+      {/* Boost CTA or status */}
+      <BoostCard
+        isBoosted={groupe.isBoosted}
+        boostExpiresAt={groupe.boostExpiresAt}
+      />
 
       {/* Profile completion checklist (if not complete) */}
       {!isProfileComplete && (
