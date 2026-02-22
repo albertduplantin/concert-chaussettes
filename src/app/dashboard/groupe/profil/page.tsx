@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { groupes, subscriptions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { GroupeProfileForm } from "@/components/forms/groupe-profile-form";
+import { DangerZoneCard } from "@/components/dashboard/danger-zone-card";
 import { User, Sparkles } from "lucide-react";
 
 export default async function GroupeProfilPage() {
@@ -80,6 +81,8 @@ export default async function GroupeProfilPage() {
         allGenres={allGenres}
         isPremium={isPremium}
       />
+
+      <DangerZoneCard groupeId={groupe.id} isVisible={groupe.isVisible} />
     </div>
   );
 }
