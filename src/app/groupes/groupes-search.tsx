@@ -123,6 +123,10 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
   };
 
   const handleGeolocate = useCallback(() => {
+    if (userLocation) {
+      setUserLocation(null);
+      return;
+    }
     if (!navigator.geolocation) return;
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
@@ -133,7 +137,7 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
       () => setGeoLoading(false),
       { timeout: 10000 }
     );
-  }, []);
+  }, [userLocation]);
 
   // Client-side filtering: note + radius
   const filteredGroupes = groupes.filter((g) => {
@@ -208,7 +212,7 @@ export function GroupesSearch({ genres }: GroupesSearchProps) {
           ) : (
             <Navigation className="h-4 w-4 mr-2" />
           )}
-          {userLocation ? "Position activée" : "Me localiser"}
+          {userLocation ? "Désactiver la position" : "Me localiser"}
         </Button>
         {userLocation && (
           <div className="space-y-2">
