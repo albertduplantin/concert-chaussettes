@@ -32,6 +32,7 @@ export default async function ContactsPage() {
       dernierConcert: { columns: { id: true, titre: true } },
     },
     orderBy: [desc(contacts.updatedAt)],
+    limit: 2000,
   });
 
   // Stats

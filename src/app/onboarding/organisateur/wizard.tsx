@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -419,9 +420,11 @@ export function OnboardingOrganisateurWizard({ defaultNom, genres }: Props) {
                       className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 hover:bg-muted/60 transition-colors"
                     >
                       {g.thumbnailUrl ? (
-                        <img
+                        <Image
                           src={g.thumbnailUrl}
                           alt={g.nom}
+                          width={48}
+                          height={48}
                           className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                         />
                       ) : (

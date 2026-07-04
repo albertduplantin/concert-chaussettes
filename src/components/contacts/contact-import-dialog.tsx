@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import Papa from "papaparse";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -136,10 +135,12 @@ export function ContactImportDialog({ open, onOpenChange }: Props) {
     }
   }, []);
 
-  const parseCsv = (file: File) => {
+  const parseCsv = async (file: File) => {
     const now = new Date().toLocaleDateString("fr-FR");
     setSourceLabel(`Import CSV – ${now}`);
     setSource("import_csv");
+
+    const { default: Papa } = await import("papaparse");
 
     Papa.parse(file, {
       header: true,

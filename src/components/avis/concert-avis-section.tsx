@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Star, QrCode, Copy, Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import QRCode from "qrcode";
 
 interface Props {
   concertId: string;
@@ -33,9 +32,15 @@ export function ConcertAvisSection({ concertId, groupeId, groupeNom, alreadyRevi
   const reviewUrl = `${appUrl}/avis/concert/${concertId}`;
 
   useEffect(() => {
-    QRCode.toDataURL(reviewUrl, { width: 256, margin: 2 })
-      .then(setQrDataUrl)
-      .catch(() => {});
+    let cancelled = false;
+    import("qrcode").then(({ default: QRCode }) =>
+      QRCode.toDataURL(reviewUrl, { width: 256, margin: 2 })
+    ).then((dataUrl) => {
+      if (!cancelled) setQrDataUrl(dataUrl);
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [reviewUrl]);
 
   const handleSubmit = async () => {

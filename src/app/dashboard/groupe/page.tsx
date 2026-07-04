@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { groupes, subscriptions, concerts, avis, analytics } from "@/lib/db/schema";
@@ -45,38 +46,39 @@ export default async function GroupeDashboard({
     redirect("/");
   }
 
-  const groupe = await db.query.groupes.findFirst({
-    where: eq(groupes.userId, session.user.id),
-    columns: {
-      id: true, nom: true, bio: true, ville: true, departement: true,
-      isVerified: true, isBoosted: true, boostExpiresAt: true, isVisible: true,
-      thumbnailUrl: true, photos: true, youtubeVideos: true, contactEmail: true,
-    },
-    with: {
-      groupeGenres: {
-        columns: { genreId: true },
-        with: {
-          genre: { columns: { id: true, nom: true } },
+  const [groupe, subscription] = await Promise.all([
+    db.query.groupes.findFirst({
+      where: eq(groupes.userId, session.user.id),
+      columns: {
+        id: true, nom: true, bio: true, ville: true, departement: true,
+        isVerified: true, isBoosted: true, boostExpiresAt: true, isVisible: true,
+        thumbnailUrl: true, photos: true, youtubeVideos: true, contactEmail: true,
+      },
+      with: {
+        groupeGenres: {
+          columns: { genreId: true },
+          with: {
+            genre: { columns: { id: true, nom: true } },
+          },
+        },
+        concerts: {
+          columns: { id: true, titre: true, date: true, ville: true, status: true },
+          orderBy: [desc(concerts.date)],
+          limit: 5,
+          with: {
+            organisateur: { columns: { nom: true } },
+          },
         },
       },
-      concerts: {
-        columns: { id: true, titre: true, date: true, ville: true, status: true },
-        orderBy: [desc(concerts.date)],
-        limit: 5,
-        with: {
-          organisateur: { columns: { nom: true } },
-        },
-      },
-    },
-  });
+    }),
+    db.query.subscriptions.findFirst({
+      where: eq(subscriptions.userId, session.user.id),
+    }),
+  ]);
 
   if (!groupe) {
     redirect("/");
   }
-
-  const subscription = await db.query.subscriptions.findFirst({
-    where: eq(subscriptions.userId, session.user.id),
-  });
 
   const isPremium = subscription?.plan === "PREMIUM";
 
@@ -98,25 +100,25 @@ export default async function GroupeDashboard({
   const isProfileComplete = profileCompletion >= 80;
 
   // Real stats from DB
-  const [avisStats] = await db
-    .select({ avgNote: avg(avis.note), total: count(avis.id) })
-    .from(avis)
-    .where(and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true)));
-
-  const totalConcerts = await db
-    .select({ total: count(concerts.id) })
-    .from(concerts)
-    .where(eq(concerts.groupeId, groupe.id));
-
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const profileViews = await db
-    .select({ total: count(analytics.id) })
-    .from(analytics)
-    .where(and(
-      eq(analytics.type, "PROFILE_VIEW"),
-      eq(analytics.targetId, groupe.id),
-      gte(analytics.createdAt, thirtyDaysAgo)
-    ));
+  const [[avisStats], totalConcerts, profileViews] = await Promise.all([
+    db
+      .select({ avgNote: avg(avis.note), total: count(avis.id) })
+      .from(avis)
+      .where(and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true))),
+    db
+      .select({ total: count(concerts.id) })
+      .from(concerts)
+      .where(eq(concerts.groupeId, groupe.id)),
+    db
+      .select({ total: count(analytics.id) })
+      .from(analytics)
+      .where(and(
+        eq(analytics.type, "PROFILE_VIEW"),
+        eq(analytics.targetId, groupe.id),
+        gte(analytics.createdAt, thirtyDaysAgo)
+      )),
+  ]);
 
   const stats = {
     concerts: totalConcerts[0]?.total || 0,
@@ -240,9 +242,11 @@ export default async function GroupeDashboard({
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               {groupe.thumbnailUrl ? (
-                <img
+                <Image
                   src={groupe.thumbnailUrl}
                   alt={groupe.nom}
+                  width={64}
+                  height={64}
                   className="w-16 h-16 rounded-xl object-cover"
                 />
               ) : (

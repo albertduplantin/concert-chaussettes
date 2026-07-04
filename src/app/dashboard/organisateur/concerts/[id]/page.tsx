@@ -55,46 +55,48 @@ export default async function ConcertDetailPage({
 
   if (!organisateur) redirect("/");
 
-  const [concert, contactsList] = await Promise.all([
-    db.query.concerts.findFirst({
-      where: and(
-        eq(concerts.id, id),
-        eq(concerts.organisateurId, organisateur.id)
-      ),
-      with: {
-        groupe: {
-          columns: { nom: true },
-        },
-        inscriptions: {
-          columns: {
-            id: true, prenom: true, nom: true, email: true,
-            telephone: true, nombrePersonnes: true, status: true, createdAt: true,
-          },
-          orderBy: (inscriptions, { asc }) => [asc(inscriptions.createdAt)],
-        },
+  const concert = await db.query.concerts.findFirst({
+    where: and(
+      eq(concerts.id, id),
+      eq(concerts.organisateurId, organisateur.id)
+    ),
+    with: {
+      groupe: {
+        columns: { nom: true },
       },
-    }),
-    db.query.contacts.findMany({
-      where: eq(contacts.organisateurId, organisateur.id),
-      orderBy: [asc(contacts.nom)],
-      columns: {
-        id: true,
-        nom: true,
-        email: true,
-        telephone: true,
+      inscriptions: {
+        columns: {
+          id: true, prenom: true, nom: true, email: true,
+          telephone: true, nombrePersonnes: true, status: true, createdAt: true,
+        },
+        orderBy: (inscriptions, { asc }) => [asc(inscriptions.createdAt)],
       },
-    }),
-  ]);
+    },
+  });
 
   if (!concert) notFound();
 
-  // Check if organisateur already left a review for this concert
-  const existingAvis = concert.status === "PASSE" && concert.groupeId
-    ? await db.query.avis.findFirst({
-        where: and(eq(avis.concertId, concert.id), eq(avis.auteurEmail, session.user.email)),
-        columns: { id: true },
-      })
-    : null;
+  // Ces deux requêtes ne sont nécessaires que dans certains statuts de concert
+  const [existingAvis, contactsList] = await Promise.all([
+    concert.status === "PASSE" && concert.groupeId
+      ? db.query.avis.findFirst({
+          where: and(eq(avis.concertId, concert.id), eq(avis.auteurEmail, session.user.email)),
+          columns: { id: true },
+        })
+      : Promise.resolve(null),
+    concert.status === "PUBLIE"
+      ? db.query.contacts.findMany({
+          where: eq(contacts.organisateurId, organisateur.id),
+          orderBy: [asc(contacts.nom)],
+          columns: {
+            id: true,
+            nom: true,
+            email: true,
+            telephone: true,
+          },
+        })
+      : Promise.resolve([]),
+  ]);
 
   const confirmedInscrits = concert.inscriptions.filter(
     (i) => i.status === "CONFIRME"

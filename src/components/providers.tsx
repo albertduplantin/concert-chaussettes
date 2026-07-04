@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -36,11 +30,17 @@ export function useSession() {
   return useContext(SessionContext);
 }
 
-function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+function SessionProvider({
+  initialSession,
+  children,
+}: {
+  initialSession: Session | null;
+  children: React.ReactNode;
+}) {
+  const [session, setSession] = useState<Session | null>(initialSession);
   const [status, setStatus] = useState<
     "loading" | "authenticated" | "unauthenticated"
-  >("loading");
+  >(initialSession ? "authenticated" : "unauthenticated");
 
   const fetchSession = useCallback(async () => {
     try {
@@ -60,10 +60,6 @@ function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => {
-    fetchSession();
-  }, [fetchSession]);
-
   return (
     <SessionContext.Provider
       value={{ data: session, status, update: fetchSession }}
@@ -73,10 +69,16 @@ function SessionProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  initialSession,
+  children,
+}: {
+  initialSession: Session | null;
+  children: React.ReactNode;
+}) {
   return (
     <ErrorBoundary>
-      <SessionProvider>
+      <SessionProvider initialSession={initialSession}>
         {children}
         <Toaster />
       </SessionProvider>

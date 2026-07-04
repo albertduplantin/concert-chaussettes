@@ -11,8 +11,9 @@ import {
   real,
   primaryKey,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // ============ ENUMS ============
 
@@ -176,7 +177,13 @@ export const groupes = pgTable("groupes", {
   isVisible: boolean("is_visible").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  // Index trigrammes (pg_trgm) pour accélérer les recherches ILIKE '%q%' sur /api/groupes/search
+  index("groupes_nom_trgm_idx").using("gin", sql`${t.nom} gin_trgm_ops`),
+  index("groupes_ville_trgm_idx").using("gin", sql`${t.ville} gin_trgm_ops`),
+  index("groupes_departement_trgm_idx").using("gin", sql`${t.departement} gin_trgm_ops`),
+  index("groupes_region_trgm_idx").using("gin", sql`${t.region} gin_trgm_ops`),
+]);
 
 // --- GroupeGenre (many-to-many) ---
 export const groupeGenres = pgTable(
@@ -247,7 +254,11 @@ export const concerts = pgTable("concerts", {
   status: concertStatusEnum("status").notNull().default("BROUILLON"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("concerts_organisateur_idx").on(t.organisateurId),
+  index("concerts_groupe_idx").on(t.groupeId),
+  index("concerts_date_idx").on(t.date),
+]);
 
 // --- Inscription ---
 export const inscriptions = pgTable("inscriptions", {
@@ -270,7 +281,9 @@ export const inscriptions = pgTable("inscriptions", {
   reviewedAt: timestamp("reviewed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("inscriptions_concert_idx").on(t.concertId),
+]);
 
 // --- Contact (CRM organisateur) ---
 export const contacts = pgTable("contacts", {
@@ -364,6 +377,7 @@ export const avis = pgTable("avis", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
   uniqueIndex("avis_concert_auteur_idx").on(t.concertId, t.auteurEmail),
+  index("avis_groupe_idx").on(t.groupeId),
 ]);
 
 // --- Demandes de devis ---

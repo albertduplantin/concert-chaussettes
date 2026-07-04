@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import { GroupeSelect } from "@/components/forms/groupe-select";
+import { FieldTooltip } from "@/components/ui/field-tooltip";
 
 function NewConcertForm() {
   const router = useRouter();
@@ -148,7 +149,8 @@ function NewConcertForm() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="adressePublique">
-                  Adresse publique (affichée sur la page)
+                  Adresse publique
+                  <FieldTooltip content="Affichée sur la page de présentation et d'inscription du concert — la page que vous partagez avec vos invités pour qu'ils puissent découvrir le concert et s'inscrire. Restez vague pour garder le lieu exact confidentiel." />
                 </Label>
                 <Input
                   id="adressePublique"
@@ -171,7 +173,7 @@ function NewConcertForm() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="maxInvites">
-                Nombre maximum d&apos;invités (laisser vide si pas de limite)
+                Nombre maximum d&apos;invités
               </Label>
               <Input
                 id="maxInvites"
@@ -180,6 +182,9 @@ function NewConcertForm() {
                 min={1}
                 placeholder="20"
               />
+              <p className="text-xs text-muted-foreground">
+                Les inscriptions seront automatiquement closes une fois cette limite atteinte. Laissez vide pour ne pas limiter.
+              </p>
             </div>
             {selectedGroupeId && (
               <div className="flex items-center justify-between">

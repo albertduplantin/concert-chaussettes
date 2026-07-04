@@ -22,6 +22,7 @@ export async function GET() {
         role: true,
         createdAt: true,
       },
+      limit: 2000,
     });
 
     return NextResponse.json({ users: allUsers });

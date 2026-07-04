@@ -6,7 +6,7 @@ import {
   organisateurs,
   subscriptions,
 } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, count, eq, gte, lt } from "drizzle-orm";
 import slugify from "slugify";
 import { randomBytes } from "crypto";
 import { concertSchema } from "@/lib/validation";
@@ -43,30 +43,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const organisateur = await db.query.organisateurs.findFirst({
-      where: eq(organisateurs.userId, session.user.id),
-    });
+    const [organisateur, subscription] = await Promise.all([
+      db.query.organisateurs.findFirst({
+        where: eq(organisateurs.userId, session.user.id),
+      }),
+      db.query.subscriptions.findFirst({
+        where: eq(subscriptions.userId, session.user.id),
+      }),
+    ]);
 
     if (!organisateur) {
       return apiErrorResponse(ApiError.notFound("Profil organisateur non trouvé"));
     }
 
     // Vérifier la limite freemium
-    const subscription = await db.query.subscriptions.findFirst({
-      where: eq(subscriptions.userId, session.user.id),
-    });
     const isPremium = subscription?.plan === "PREMIUM";
 
     if (!isPremium) {
       const currentYear = new Date().getFullYear();
-      const existingConcerts = await db.query.concerts.findMany({
-        where: eq(concerts.organisateurId, organisateur.id),
-      });
-      const concertsThisYear = existingConcerts.filter(
-        (c) => new Date(c.date).getFullYear() === currentYear
-      );
+      const yearStart = new Date(currentYear, 0, 1);
+      const yearEnd = new Date(currentYear + 1, 0, 1);
 
-      if (concertsThisYear.length >= FREE_CONCERTS_LIMIT_PER_YEAR) {
+      const [{ total: concertsThisYear }] = await db
+        .select({ total: count() })
+        .from(concerts)
+        .where(
+          and(
+            eq(concerts.organisateurId, organisateur.id),
+            gte(concerts.date, yearStart),
+            lt(concerts.date, yearEnd)
+          )
+        );
+
+      if (concertsThisYear >= FREE_CONCERTS_LIMIT_PER_YEAR) {
         return apiErrorResponse(
           ApiError.forbidden(
             `Limite de ${FREE_CONCERTS_LIMIT_PER_YEAR} concerts/an atteinte. Passez en Premium pour créer plus de concerts.`

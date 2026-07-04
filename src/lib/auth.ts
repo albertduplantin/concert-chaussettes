@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { compare } from "bcryptjs";
+import { cache } from "react";
 import { db } from "@/lib/db";
 import { users, accounts, groupes, organisateurs } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -266,7 +267,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
  * Vérifie que l'utilisateur existe toujours en DB (évite les boucles de redirect sur JWT stale).
  * Requête minimale : SELECT id uniquement.
  */
-export async function getSession(): Promise<Session | null> {
+export const getSession = cache(async (): Promise<Session | null> => {
   const session = await auth();
   if (!session?.user?.email) {
     return null;
@@ -294,4 +295,4 @@ export async function getSession(): Promise<Session | null> {
       needsOnboarding: (session.user as { needsOnboarding?: boolean }).needsOnboarding || false,
     },
   };
-}
+});

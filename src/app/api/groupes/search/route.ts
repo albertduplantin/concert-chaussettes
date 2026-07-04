@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
         desc(sql`CASE WHEN ${groupes.isBoosted} = true AND ${groupes.boostExpiresAt} > NOW() THEN 1 ELSE 0 END`),
         asc(groupes.nom),
       ],
+      limit: 500,
     });
 
     // Filtrer par genres si spécifiés
