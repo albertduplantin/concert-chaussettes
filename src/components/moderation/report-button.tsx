@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 interface ReportButtonProps {
-  targetType: "groupe" | "concert";
+  targetType: "groupe" | "concert" | "organisateur";
   targetId: string;
   targetName: string;
 }
@@ -62,7 +62,8 @@ export function ReportButton({ targetType, targetId, targetName }: ReportButtonP
     }
   }
 
-  const targetLabel = targetType === "groupe" ? "ce groupe" : "ce concert";
+  const targetLabel =
+    targetType === "groupe" ? "ce groupe" : targetType === "organisateur" ? "cet organisateur" : "ce concert";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

@@ -161,6 +161,19 @@ export const organisateurProfileSchema = z.object({
     .optional()
     .nullable()
     .transform((val) => val || null),
+  photos: z
+    .array(photoUrlSchema)
+    .max(10, "Maximum 10 photos")
+    .default([]),
+  capaciteMax: z
+    .union([z.number().int().min(1).max(2000), z.null()])
+    .optional()
+    .nullable(),
+  equipements: z
+    .array(z.string().max(50).transform(sanitizeText))
+    .max(15, "Maximum 15 équipements")
+    .default([]),
+  isVisible: z.boolean().default(true),
   ville: optionalTextSchema,
   codePostal: codePostalSchema,
   departement: optionalTextSchema,

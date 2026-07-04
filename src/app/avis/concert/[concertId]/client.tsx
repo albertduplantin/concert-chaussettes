@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, CheckCircle, AlertCircle, Loader2, Music } from "lucide-react";
+import { Star, CheckCircle, AlertCircle, Loader2, Music, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -31,6 +31,7 @@ export function AvisConcertClient({ concertId, data, error }: Props) {
   const [email, setEmail] = useState("");
   const [nom, setNom] = useState("");
   const [commentaire, setCommentaire] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -53,6 +54,7 @@ export function AvisConcertClient({ concertId, data, error }: Props) {
           nom: nom.trim() || undefined,
           note,
           commentaire: commentaire.trim() || undefined,
+          mediaUrl: mediaUrl.trim() || undefined,
         }),
       });
       const json = await res.json();
@@ -203,6 +205,21 @@ export function AvisConcertClient({ concertId, data, error }: Props) {
                   maxLength={1000}
                   rows={3}
                 />
+
+                {/* Souvenir (photo/vidéo) */}
+                <div className="space-y-1">
+                  <Label htmlFor="mediaUrl" className="flex items-center gap-1.5 text-sm">
+                    <Camera className="h-3.5 w-3.5 text-muted-foreground" />
+                    Un lien vers vos photos ou vidéos du concert ? (facultatif)
+                  </Label>
+                  <Input
+                    id="mediaUrl"
+                    type="url"
+                    placeholder="Album Google Photos, YouTube, Instagram..."
+                    value={mediaUrl}
+                    onChange={(e) => setMediaUrl(e.target.value)}
+                  />
+                </div>
 
                 <p className="text-xs text-muted-foreground text-center">
                   Un seul avis par adresse email par concert.

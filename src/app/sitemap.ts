@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 import { db } from "@/lib/db";
-import { groupes, concerts } from "@/lib/db/schema";
+import { groupes, organisateurs, concerts } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
     { url: `${baseUrl}/groupes`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.9 },
+    { url: `${baseUrl}/organisateurs`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.9 },
     { url: `${baseUrl}/login`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
     { url: `${baseUrl}/register`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
   ];
@@ -27,6 +28,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // Dynamic organisateur pages
+  const visibleOrganisateurs = await db.query.organisateurs.findMany({
+    where: eq(organisateurs.isVisible, true),
+    columns: { id: true, updatedAt: true },
+  });
+
+  const organisateurPages: MetadataRoute.Sitemap = visibleOrganisateurs.map((o) => ({
+    url: `${baseUrl}/organisateurs/${o.id}`,
+    lastModified: o.updatedAt ?? new Date(),
+    changeFrequency: "weekly",
+    priority: 0.6,
+  }));
+
   // Dynamic concert pages (published only)
   const publishedConcerts = await db.query.concerts.findMany({
     where: eq(concerts.status, "PUBLIE"),
@@ -40,5 +54,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...groupePages, ...concertPages];
+  return [...staticPages, ...groupePages, ...organisateurPages, ...concertPages];
 }

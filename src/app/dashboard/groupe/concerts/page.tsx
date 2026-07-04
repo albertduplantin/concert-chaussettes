@@ -2,13 +2,14 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { groupes, concerts } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { groupes, concerts, avis } from "@/lib/db/schema";
+import { eq, desc, and } from "drizzle-orm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, MapPin, Users } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { OrganisateurAvisButton } from "@/components/avis/organisateur-avis-button";
 
 const statusLabels: Record<string, { label: string; class: string }> = {
   BROUILLON: { label: "Brouillon", class: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" },
@@ -35,6 +36,7 @@ export default async function GroupeConcertsPage() {
           ville: true,
           status: true,
           maxInvites: true,
+          organisateurId: true,
         },
         orderBy: [desc(concerts.date)],
         with: {
@@ -48,6 +50,16 @@ export default async function GroupeConcertsPage() {
   if (!groupe) redirect("/");
 
   const allConcerts = groupe.concerts || [];
+
+  // Concerts pour lesquels ce groupe a déjà noté l'organisateur
+  const ratedConcertIds = new Set(
+    (
+      await db.query.avis.findMany({
+        where: and(eq(avis.groupeId, groupe.id), eq(avis.cible, "ORGANISATEUR"), eq(avis.auteurEmail, session.user.email)),
+        columns: { concertId: true },
+      })
+    ).map((a) => a.concertId)
+  );
   const upcoming = allConcerts.filter(
     (c) => new Date(c.date) >= new Date() && c.status === "PUBLIE"
   );
@@ -96,7 +108,11 @@ export default async function GroupeConcertsPage() {
               </h2>
               <div className="space-y-3 opacity-75">
                 {past.map((concert) => (
-                  <ConcertCard key={concert.id} concert={concert} />
+                  <ConcertCard
+                    key={concert.id}
+                    concert={concert}
+                    alreadyRated={ratedConcertIds.has(concert.id)}
+                  />
                 ))}
               </div>
             </div>
@@ -109,6 +125,7 @@ export default async function GroupeConcertsPage() {
 
 function ConcertCard({
   concert,
+  alreadyRated = false,
 }: {
   concert: {
     id: string;
@@ -117,9 +134,11 @@ function ConcertCard({
     ville: string | null;
     status: string;
     maxInvites: number | null;
+    organisateurId: string;
     organisateur: { nom: string | null };
     inscriptions: { id: string }[];
   };
+  alreadyRated?: boolean;
 }) {
   const status = statusLabels[concert.status] || statusLabels.BROUILLON;
 
@@ -156,6 +175,14 @@ function ConcertCard({
             </span>
           </div>
         </div>
+        {concert.status === "PASSE" && (
+          <OrganisateurAvisButton
+            organisateurId={concert.organisateurId}
+            organisateurNom={concert.organisateur?.nom || "l'organisateur"}
+            concertId={concert.id}
+            alreadyRated={alreadyRated}
+          />
+        )}
       </CardContent>
     </Card>
   );

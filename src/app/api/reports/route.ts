@@ -5,7 +5,7 @@ import { reports } from "@/lib/db/schema";
 import { z } from "zod/v4";
 
 const createReportSchema = z.object({
-  targetType: z.enum(["groupe", "concert"]),
+  targetType: z.enum(["groupe", "concert", "organisateur"]),
   targetId: z.string().uuid(),
   reason: z.string().min(10, "Veuillez décrire le problème (10 caractères minimum)").max(1000),
 });

@@ -144,6 +144,28 @@ export async function notifyAvisReceived(
   );
 }
 
+// ============ NOTIFICATION 4: CONTACT REQUEST (GROUPE -> ORGANISATEUR) ============
+
+interface ContactNotificationData {
+  organisateurEmail: string;
+  organisateurNom: string;
+  groupeNom: string;
+  groupeContactEmail: string | null;
+  message: string;
+  dateSouhaitee: string | null;
+}
+
+export async function notifyContactReceived(
+  data: ContactNotificationData
+): Promise<void> {
+  const html = buildContactEmailHtml(data);
+  await sendEmail(
+    data.organisateurEmail,
+    `${data.groupeNom} souhaite jouer chez vous`,
+    html
+  );
+}
+
 // ============ HTML TEMPLATES ============
 
 function baseLayout(title: string, content: string): string {
@@ -317,8 +339,14 @@ export async function notifyResetPassword(to: string, resetUrl: string): Promise
 
 function buildAvisEmailHtml(data: AvisNotificationData): string {
   const auteurLabel =
-    data.auteurType === "ORGANISATEUR" ? "un organisateur" : "un invité";
+    data.auteurType === "ORGANISATEUR"
+      ? "un organisateur"
+      : data.auteurType === "GROUPE"
+        ? "un groupe"
+        : "un invité";
   const auteurName = data.auteurNom || "Anonyme";
+  // Un avis "GROUPE" note l'organisateur : le destinataire est donc l'organisateur.
+  const dashboardPath = data.auteurType === "GROUPE" ? "/dashboard/organisateur" : "/dashboard/groupe";
 
   return baseLayout(
     "Nouvel avis reçu",
@@ -332,7 +360,25 @@ function buildAvisEmailHtml(data: AvisNotificationData): string {
      </div>` : ""}
      ${data.concertTitre ? `<p style="margin-top:12px;color:#71717a;font-size:13px;">Concert : ${escapeHtml(data.concertTitre)}</p>` : ""}
      <div style="margin-top:24px;text-align:center;">
-       <a href="${APP_URL}/dashboard/groupe" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#f97316,#f59e0b);color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">Voir tous les avis</a>
+       <a href="${APP_URL}${dashboardPath}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#f97316,#f59e0b);color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">Voir tous les avis</a>
+     </div>`
+  );
+}
+
+// --- Contact request template ---
+
+function buildContactEmailHtml(data: ContactNotificationData): string {
+  return baseLayout(
+    "Nouvelle demande de concert",
+    `<p style="color:#3f3f46;font-size:14px;"><strong>${escapeHtml(data.groupeNom)}</strong> souhaiterait jouer chez vous.</p>
+     ${data.dateSouhaitee ? row("Date souhaitée", formatDateFr(data.dateSouhaitee)) : ""}
+     <div style="margin-top:16px;padding:16px;background-color:#f4f4f5;border-radius:4px;">
+       <p style="color:#71717a;font-size:12px;margin:0 0 8px 0;">Message :</p>
+       <p style="color:#18181b;font-size:14px;margin:0;white-space:pre-wrap;">${escapeHtml(data.message)}</p>
+     </div>
+     ${data.groupeContactEmail ? `<p style="margin-top:24px;color:#71717a;font-size:13px;">Répondez directement à <a href="mailto:${escapeHtml(data.groupeContactEmail)}" style="color:#f97316;">${escapeHtml(data.groupeContactEmail)}</a> pour donner suite à cette demande.</p>` : ""}
+     <div style="margin-top:24px;text-align:center;">
+       <a href="${APP_URL}/dashboard/organisateur/demandes" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#f97316,#f59e0b);color:#ffffff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">Voir la demande</a>
      </div>`
   );
 }

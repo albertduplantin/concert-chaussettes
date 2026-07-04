@@ -1,6 +1,10 @@
 export const revalidate = 300;
 
 import Link from "next/link";
+import Image from "next/image";
+import { db } from "@/lib/db";
+import { groupes } from "@/lib/db/schema";
+import { and, desc, eq, ilike, isNotNull } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Header } from "@/components/layout/header";
@@ -19,16 +23,37 @@ import {
   Sparkles,
   Heart,
   Mic2,
+  MapPin,
 } from "lucide-react";
 
-export default function HomePage() {
+async function getHeroGroupe() {
+  const namedPick = await db.query.groupes.findFirst({
+    where: and(
+      eq(groupes.isVisible, true),
+      isNotNull(groupes.thumbnailUrl),
+      ilike(groupes.nom, "%aldo%")
+    ),
+    columns: { id: true, nom: true, ville: true, thumbnailUrl: true },
+  });
+  if (namedPick) return namedPick;
+
+  return db.query.groupes.findFirst({
+    where: and(eq(groupes.isVisible, true), isNotNull(groupes.thumbnailUrl)),
+    columns: { id: true, nom: true, ville: true, thumbnailUrl: true },
+    orderBy: [desc(groupes.isBoosted), desc(groupes.isVerified), desc(groupes.createdAt)],
+  });
+}
+
+export default async function HomePage() {
+  const heroGroupe = await getHeroGroupe();
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
 
       <main className="flex-1">
         {/* Hero Section - Design moderne avec gradient */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/20 dark:via-amber-950/20 dark:to-yellow-950/20 py-20 md:py-32">
+        <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950/20 dark:via-amber-950/20 dark:to-yellow-950/20 py-20 md:py-28">
           {/* Éléments décoratifs */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-200/30 dark:bg-orange-800/10 rounded-full blur-3xl" />
@@ -36,22 +61,57 @@ export default function HomePage() {
           </div>
 
           <div className="container mx-auto px-4 relative z-10">
-            <div className="mx-auto max-w-4xl text-center mb-12">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium mb-6">
-                <Sparkles className="h-4 w-4" />
-                La musique live, chez vous
+            <div className={`grid items-center mb-12 ${heroGroupe ? "lg:grid-cols-[1.1fr_0.9fr] lg:gap-16" : ""}`}>
+              <div className={heroGroupe ? "text-center lg:text-left" : "mx-auto max-w-4xl text-center"}>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium mb-6">
+                  <Sparkles className="h-4 w-4" />
+                  La musique live, chez vous
+                </div>
+                <h1 className="text-4xl md:text-6xl lg:text-6xl font-bold tracking-tight mb-6">
+                  Des concerts intimes,
+                  <br />
+                  <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+                    dans votre salon.
+                  </span>
+                </h1>
+                <p className={`text-lg md:text-xl text-muted-foreground mb-10 ${heroGroupe ? "max-w-xl mx-auto lg:mx-0" : "max-w-2xl mx-auto"}`}>
+                  Trouvez le groupe parfait pour votre événement privé.
+                  Des artistes locaux, une ambiance unique, des souvenirs inoubliables.
+                </p>
               </div>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-                Des concerts intimes,
-                <br />
-                <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
-                  dans votre salon.
-                </span>
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-                Trouvez le groupe parfait pour votre événement privé.
-                Des artistes locaux, une ambiance unique, des souvenirs inoubliables.
-              </p>
+
+              {/* Photo d'un groupe en conditions réelles */}
+              {heroGroupe && (
+                <div className="relative mx-auto w-full max-w-sm lg:max-w-none">
+                  <div className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-orange-400/40 to-amber-400/40 rotate-2 blur-md" />
+                  <Link
+                    href={`/groupes/${heroGroupe.id}`}
+                    className="group relative block aspect-[4/5] rounded-[1.75rem] overflow-hidden shadow-2xl ring-1 ring-black/5 -rotate-1 hover:rotate-0 transition-transform duration-300"
+                  >
+                    <Image
+                      src={heroGroupe.thumbnailUrl!}
+                      alt={heroGroupe.nom}
+                      fill
+                      priority
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="(max-width: 1024px) 90vw, 40vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-5 flex items-center gap-2 text-white">
+                      <Mic2 className="h-4 w-4 shrink-0 opacity-90" />
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{heroGroupe.nom}</p>
+                        {heroGroupe.ville && (
+                          <p className="text-xs text-white/80 flex items-center gap-1 truncate">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            {heroGroupe.ville}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Barre de recherche intégrée */}
@@ -226,6 +286,12 @@ export default function HomePage() {
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
+                <Link
+                  href="/organisateurs"
+                  className="block text-center text-sm text-muted-foreground hover:text-orange-600 mt-3"
+                >
+                  Ou parcourez les salons qui vous accueillent →
+                </Link>
               </Card>
             </div>
           </div>

@@ -29,6 +29,9 @@ import { GroupeActionButtons } from "@/components/groupes/groupe-action-buttons"
 import { FloatingCTA } from "@/components/ui/floating-cta";
 import { TrackView } from "@/components/analytics/track-view";
 import { ReportButton } from "@/components/moderation/report-button";
+import { SouvenirsSection } from "@/components/avis/souvenirs-section";
+import { getConcertSouvenirs } from "@/lib/souvenirs";
+import { filterRevealedAvis } from "@/lib/avis-reveal";
 
 export const revalidate = 60;
 
@@ -76,29 +79,35 @@ export default async function GroupePage({ params }: PageProps) {
     notFound();
   }
 
+  const concertsPasses = await db.query.concerts.findMany({
+    where: and(eq(concerts.groupeId, groupe.id), eq(concerts.status, "PASSE")),
+    columns: { id: true },
+  });
+  const concertIds = concertsPasses.map((c) => c.id);
+
   // Parallel DB queries for stats
-  const [avisStatsResult, avisListe, concertsStatsResult] = await Promise.all([
+  const [avisStatsResult, avisListeRaw, souvenirs] = await Promise.all([
     db
       .select({ avgNote: avg(avis.note), total: count(avis.id) })
       .from(avis)
-      .where(and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true))),
+      .where(and(eq(avis.groupeId, groupe.id), eq(avis.cible, "GROUPE"), eq(avis.isVisible, true))),
     db.query.avis.findMany({
-      where: and(eq(avis.groupeId, groupe.id), eq(avis.isVisible, true)),
-      columns: { id: true, auteurNom: true, auteurType: true, note: true, commentaire: true, createdAt: true },
+      where: and(eq(avis.groupeId, groupe.id), eq(avis.cible, "GROUPE"), eq(avis.isVisible, true)),
+      columns: {
+        id: true, auteurNom: true, auteurType: true, cible: true, note: true,
+        commentaire: true, createdAt: true, concertId: true, revealAt: true,
+      },
       orderBy: [desc(avis.createdAt)],
-      limit: 10,
+      limit: 30,
     }),
-    db
-      .select({ total: count(concerts.id) })
-      .from(concerts)
-      .where(and(eq(concerts.groupeId, groupe.id), eq(concerts.status, "PASSE"))),
+    getConcertSouvenirs(concertIds),
   ]);
   const avisStats = avisStatsResult[0];
-  const concertsStats = concertsStatsResult[0];
+  const concertsCount = concertIds.length;
+  const avisListe = filterRevealedAvis(avisListeRaw).slice(0, 10);
 
   const avgNote = avisStats.avgNote ? parseFloat(Number(avisStats.avgNote).toFixed(1)) : null;
   const avisCount = Number(avisStats.total);
-  const concertsCount = Number(concertsStats.total);
 
   const allPhotos = [
     ...(groupe.thumbnailUrl ? [groupe.thumbnailUrl] : []),
@@ -334,6 +343,9 @@ export default async function GroupePage({ params }: PageProps) {
           </div>
         </div>
       )}
+
+      {/* Souvenirs */}
+      <SouvenirsSection souvenirs={souvenirs} />
 
       {/* Reviews section */}
       <div className="container max-w-6xl mx-auto px-4 py-8 border-t">

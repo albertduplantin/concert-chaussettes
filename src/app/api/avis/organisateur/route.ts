@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { avis, concerts, organisateurs, groupes } from "@/lib/db/schema";
+import { avis, concerts, groupes, organisateurs } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { notifyAvisReceived } from "@/lib/email";
 
 const schema = z.object({
-  groupeId: z.string().uuid(),
+  organisateurId: z.string().uuid(),
   concertId: z.string().uuid(),
   note: z.number().int().min(1).max(5),
   commentaire: z.string().max(1000).optional(),
@@ -15,15 +15,15 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
-  if (!session || session.user.role !== "ORGANISATEUR") {
+  if (!session || session.user.role !== "GROUPE") {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const organisateur = await db.query.organisateurs.findFirst({
-    where: eq(organisateurs.userId, session.user.id),
+  const groupe = await db.query.groupes.findFirst({
+    where: eq(groupes.userId, session.user.id),
     columns: { id: true, nom: true },
   });
-  if (!organisateur) {
+  if (!groupe) {
     return NextResponse.json({ error: "Profil introuvable" }, { status: 404 });
   }
 
@@ -33,15 +33,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Données invalides" }, { status: 400 });
   }
 
-  const { groupeId, concertId, note, commentaire } = parsed.data;
+  const { organisateurId, concertId, note, commentaire } = parsed.data;
 
-  // Verify the concert belongs to this organisateur and is PASSE
+  // Vérifie que le concert appartient bien à ce groupe, à cet organisateur, et est terminé
   const concert = await db.query.concerts.findFirst({
-    where: and(
-      eq(concerts.id, concertId),
-      eq(concerts.organisateurId, organisateur.id)
-    ),
-    columns: { id: true, status: true, groupeId: true, titre: true },
+    where: and(eq(concerts.id, concertId), eq(concerts.groupeId, groupe.id)),
+    columns: { id: true, status: true, organisateurId: true, titre: true },
   });
   if (!concert) {
     return NextResponse.json({ error: "Concert introuvable" }, { status: 404 });
@@ -49,11 +46,11 @@ export async function POST(request: NextRequest) {
   if (concert.status !== "PASSE") {
     return NextResponse.json({ error: "Le concert n'est pas encore terminé" }, { status: 400 });
   }
-  if (concert.groupeId !== groupeId) {
-    return NextResponse.json({ error: "Ce groupe n'a pas joué à ce concert" }, { status: 400 });
+  if (concert.organisateurId !== organisateurId) {
+    return NextResponse.json({ error: "Cet organisateur n'a pas organisé ce concert" }, { status: 400 });
   }
 
-  // Check for duplicate
+  // Un avis par email par concert (même contrainte que pour les groupes)
   const existing = await db.query.avis.findFirst({
     where: and(eq(avis.concertId, concertId), eq(avis.auteurEmail, session.user.email)),
     columns: { id: true },
@@ -65,28 +62,30 @@ export async function POST(request: NextRequest) {
   const revealAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
   const [created] = await db.insert(avis).values({
-    groupeId,
+    groupeId: groupe.id,
+    organisateurId,
     concertId,
-    cible: "GROUPE",
-    auteurType: "ORGANISATEUR",
+    cible: "ORGANISATEUR",
+    auteurType: "GROUPE",
     auteurEmail: session.user.email,
-    auteurNom: organisateur.nom,
+    auteurNom: groupe.nom,
     note,
     commentaire: commentaire || null,
     revealAt,
   }).returning({ id: avis.id });
 
-  // Email notification (fire-and-forget)
-  const groupe = await db.query.groupes.findFirst({
-    where: eq(groupes.id, groupeId),
-    columns: { contactEmail: true, nom: true },
+  // Notification par email (best-effort)
+  const organisateur = await db.query.organisateurs.findFirst({
+    where: eq(organisateurs.id, organisateurId),
+    columns: { nom: true },
+    with: { user: { columns: { email: true } } },
   });
-  if (groupe?.contactEmail) {
+  if (organisateur?.user?.email) {
     notifyAvisReceived({
-      groupeContactEmail: groupe.contactEmail,
-      groupeNom: groupe.nom,
-      auteurNom: organisateur.nom,
-      auteurType: "ORGANISATEUR",
+      groupeContactEmail: organisateur.user.email,
+      groupeNom: organisateur.nom,
+      auteurNom: groupe.nom,
+      auteurType: "GROUPE",
       note,
       commentaire: commentaire || null,
       concertTitre: concert.titre,

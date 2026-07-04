@@ -65,6 +65,8 @@ export const analyticsTypeEnum = pgEnum("analytics_type", [
   "INSCRIPTION",
 ]);
 
+export const avisCibleEnum = pgEnum("avis_cible", ["GROUPE", "ORGANISATEUR"]);
+
 // ============ TABLES ============
 
 // --- User ---
@@ -209,6 +211,9 @@ export const organisateurs = pgTable("organisateurs", {
   nom: varchar("nom", { length: 255 }).notNull(),
   bio: text("bio"),
   thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
+  photos: jsonb("photos").$type<string[]>().default([]),
+  capaciteMax: integer("capacite_max"),
+  equipements: jsonb("equipements").$type<string[]>().default([]),
   // Localisation
   ville: varchar("ville", { length: 255 }),
   codePostal: varchar("code_postal", { length: 10 }),
@@ -222,9 +227,17 @@ export const organisateurs = pgTable("organisateurs", {
     primaryColor?: string;
     secondaryColor?: string;
   }>(),
+  // Status
+  isVisible: boolean("is_visible").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("organisateurs_is_visible_idx").on(t.isVisible),
+  index("organisateurs_nom_trgm_idx").using("gin", sql`${t.nom} gin_trgm_ops`),
+  index("organisateurs_ville_trgm_idx").using("gin", sql`${t.ville} gin_trgm_ops`),
+  index("organisateurs_departement_trgm_idx").using("gin", sql`${t.departement} gin_trgm_ops`),
+  index("organisateurs_region_trgm_idx").using("gin", sql`${t.region} gin_trgm_ops`),
+]);
 
 // --- Concert ---
 export const concerts = pgTable("concerts", {
@@ -359,7 +372,7 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// --- Avis (notes et commentaires sur les groupes) ---
+// --- Avis (notes et commentaires sur les groupes et organisateurs) ---
 export const avis = pgTable("avis", {
   id: uuid("id").defaultRandom().primaryKey(),
   groupeId: uuid("groupe_id")
@@ -368,16 +381,47 @@ export const avis = pgTable("avis", {
   concertId: uuid("concert_id").references(() => concerts.id, {
     onDelete: "set null",
   }),
-  auteurType: varchar("auteur_type", { length: 20 }).notNull(), // 'ORGANISATEUR' | 'INVITE'
+  // Cible de l'avis : le groupe (par défaut) ou l'organisateur du même concert.
+  // groupeId identifie toujours "de quel concert/groupe il s'agit", organisateurId
+  // n'est renseigné que lorsque cible = ORGANISATEUR (l'avis note l'organisateur).
+  cible: avisCibleEnum("cible").notNull().default("GROUPE"),
+  organisateurId: uuid("organisateur_id").references(() => organisateurs.id, {
+    onDelete: "cascade",
+  }),
+  auteurType: varchar("auteur_type", { length: 20 }).notNull(), // 'ORGANISATEUR' | 'INVITE' | 'GROUPE'
   auteurEmail: varchar("auteur_email", { length: 255 }).notNull(),
   auteurNom: varchar("auteur_nom", { length: 255 }),
   note: integer("note").notNull(), // 1 à 5
   commentaire: text("commentaire"),
+  // Liens (pas de fichiers) vers des photos/vidéos du concert partagées par l'auteur
+  mediaUrls: jsonb("media_urls").$type<string[]>().default([]),
+  // Révélation différée façon Airbnb : l'avis d'un professionnel (ORGANISATEUR/GROUPE)
+  // reste caché tant que la contrepartie n'a pas répondu, ou jusqu'à cette date.
+  revealAt: timestamp("reveal_at"),
   isVisible: boolean("is_visible").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (t) => [
   uniqueIndex("avis_concert_auteur_idx").on(t.concertId, t.auteurEmail),
   index("avis_groupe_idx").on(t.groupeId),
+  index("avis_organisateur_idx").on(t.organisateurId),
+]);
+
+// --- Demandes de contact (artiste -> organisateur) ---
+export const demandesContact = pgTable("demandes_contact", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupeId: uuid("groupe_id")
+    .notNull()
+    .references(() => groupes.id, { onDelete: "cascade" }),
+  organisateurId: uuid("organisateur_id")
+    .notNull()
+    .references(() => organisateurs.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  dateSouhaitee: timestamp("date_souhaitee"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("demandes_contact_organisateur_idx").on(t.organisateurId),
+  index("demandes_contact_groupe_idx").on(t.groupeId),
 ]);
 
 // --- Demandes de devis ---
@@ -458,6 +502,7 @@ export const groupesRelations = relations(groupes, ({ one, many }) => ({
   concerts: many(concerts),
   avis: many(avis),
   demandesDevis: many(demandesDevis),
+  demandesContact: many(demandesContact),
 }));
 
 export const groupeGenresRelations = relations(groupeGenres, ({ one }) => ({
@@ -486,6 +531,8 @@ export const organisateursRelations = relations(
     contacts: many(contacts),
     messageTemplates: many(messageTemplates),
     contactShareTokens: many(contactShareTokens),
+    avis: many(avis),
+    demandesContact: many(demandesContact),
   })
 );
 
@@ -556,8 +603,23 @@ export const avisRelations = relations(avis, ({ one }) => ({
     fields: [avis.groupeId],
     references: [groupes.id],
   }),
+  organisateur: one(organisateurs, {
+    fields: [avis.organisateurId],
+    references: [organisateurs.id],
+  }),
   concert: one(concerts, {
     fields: [avis.concertId],
     references: [concerts.id],
+  }),
+}));
+
+export const demandesContactRelations = relations(demandesContact, ({ one }) => ({
+  groupe: one(groupes, {
+    fields: [demandesContact.groupeId],
+    references: [groupes.id],
+  }),
+  organisateur: one(organisateurs, {
+    fields: [demandesContact.organisateurId],
+    references: [organisateurs.id],
   }),
 }));

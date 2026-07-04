@@ -37,6 +37,11 @@ const voteSchema = z.object({
   nom: z.string().min(1).max(255).optional(),
   note: z.number().int().min(1).max(5),
   commentaire: z.string().max(1000).optional(),
+  mediaUrl: z
+    .string()
+    .url()
+    .refine((v) => v.startsWith("https://") || v.startsWith("http://"), "Lien invalide")
+    .optional(),
 });
 
 export async function POST(
@@ -63,7 +68,7 @@ export async function POST(
     return NextResponse.json({ error: "Données invalides" }, { status: 400 });
   }
 
-  const { email, nom, note, commentaire } = parsed.data;
+  const { email, nom, note, commentaire, mediaUrl } = parsed.data;
 
   // Check for duplicate
   const existing = await db.query.avis.findFirst({
@@ -82,6 +87,7 @@ export async function POST(
     auteurNom: nom || null,
     note,
     commentaire: commentaire || null,
+    mediaUrls: mediaUrl ? [mediaUrl] : [],
   });
 
   // Email notification (fire-and-forget)

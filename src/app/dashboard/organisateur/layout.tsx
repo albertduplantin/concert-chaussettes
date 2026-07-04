@@ -13,6 +13,7 @@ import {
   Home,
   Music,
   UserCircle,
+  Mic2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,11 @@ const sidebarLinks = [
     href: "/dashboard/organisateur/messages",
     label: "Templates messages",
     icon: Mail,
+  },
+  {
+    href: "/dashboard/organisateur/demandes",
+    label: "Demandes de concert",
+    icon: Mic2,
   },
   {
     href: "/dashboard/organisateur/profil",

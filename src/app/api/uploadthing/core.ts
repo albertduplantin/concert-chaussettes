@@ -61,6 +61,33 @@ async function checkGroupeLimits(userId: string, maxPhotos: number) {
   };
 }
 
+/**
+ * Vérifie les limites d'upload pour les organisateurs
+ */
+async function checkOrganisateurLimits(userId: string, maxPhotos: number) {
+  const organisateur = await db.query.organisateurs.findFirst({
+    where: eq(organisateurs.userId, userId),
+  });
+
+  if (!organisateur) {
+    throw new UploadThingError("Profil organisateur non trouvé");
+  }
+
+  const currentPhotos = organisateur.photos?.length || 0;
+
+  if (currentPhotos >= maxPhotos) {
+    throw new UploadThingError(
+      `Limite de ${maxPhotos} photos atteinte. ${maxPhotos === 3 ? "Passez en Premium pour plus de photos." : ""}`
+    );
+  }
+
+  return {
+    organisateurId: organisateur.id,
+    currentPhotos,
+    remainingSlots: maxPhotos - currentPhotos,
+  };
+}
+
 export const ourFileRouter = {
   /**
    * Upload de la photo de profil (thumbnail) - pas de limite
@@ -202,6 +229,56 @@ export const ourFileRouter = {
             updatedAt: new Date(),
           })
           .where(eq(groupes.id, metadata.groupeId));
+      }
+
+      return {
+        uploadedBy: metadata.userId,
+        url: file.ufsUrl,
+        name: file.name,
+        size: file.size,
+      };
+    }),
+
+  /**
+   * Upload de photos pour les profils d'organisateurs (galerie du lieu)
+   */
+  organisateurPhoto: f({
+    image: {
+      maxFileSize: UPLOAD_CONFIG.maxFileSize,
+      maxFileCount: 1,
+    },
+  })
+    .middleware(async () => {
+      const auth = await authMiddleware();
+
+      if (auth.role !== "ORGANISATEUR") {
+        throw new UploadThingError("Seuls les organisateurs peuvent uploader des photos");
+      }
+
+      const organisateurData = await checkOrganisateurLimits(auth.userId, auth.limits.maxPhotos);
+
+      return {
+        ...auth,
+        ...organisateurData,
+      };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log(`[UPLOAD] Photo uploadée pour organisateur ${metadata.organisateurId}`);
+      console.log(`[UPLOAD] URL: ${file.ufsUrl}`);
+
+      const organisateur = await db.query.organisateurs.findFirst({
+        where: eq(organisateurs.id, metadata.organisateurId),
+      });
+
+      if (organisateur) {
+        const currentPhotos = organisateur.photos || [];
+        await db
+          .update(organisateurs)
+          .set({
+            photos: [...currentPhotos, file.ufsUrl],
+            updatedAt: new Date(),
+          })
+          .where(eq(organisateurs.id, metadata.organisateurId));
       }
 
       return {

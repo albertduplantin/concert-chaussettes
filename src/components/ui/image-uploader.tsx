@@ -19,6 +19,7 @@ interface ImageUploaderProps {
   onThumbnailChange?: (url: string | null) => void;
   disabled?: boolean;
   className?: string;
+  endpoint?: "groupePhoto" | "organisateurPhoto";
 }
 
 interface UploadingFile {
@@ -35,11 +36,12 @@ export function ImageUploader({
   onThumbnailChange,
   disabled = false,
   className,
+  endpoint = "groupePhoto",
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState<UploadingFile[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const { startUpload, isUploading } = useUploadThing("groupePhoto", {
+  const { startUpload, isUploading } = useUploadThing(endpoint, {
     onClientUploadComplete: (res) => {
       if (res && res.length > 0) {
         const newUrl = res[0].url;
